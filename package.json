@@ -15,8 +15,7 @@
     "db:migrate": "node scripts/migrate.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
-    "e2e": "playwright test",
-    "shots": "node scripts/screenshots.mjs"
+    "test:desktop": "node scripts/qa/desktop-handoff.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.135.0",

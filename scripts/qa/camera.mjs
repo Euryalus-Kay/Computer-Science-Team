@@ -1,0 +1,24 @@
+// The camera consent step for a member on a test that uses the camera check.
+import fs from "node:fs";
+import { chromium } from "@playwright/test";
+import { OUT, BASE } from "./lib.mjs";
+const creds = JSON.parse(fs.readFileSync(`${OUT}/../creds.json`, "utf8"));
+const browser = await chromium.launch({ args: ["--use-fake-ui-for-media-stream", "--use-fake-device-for-media-stream"] });
+const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 2 });
+const page = await ctx.newPage();
+page.on("pageerror", (e) => console.log("PAGEERROR", e.message));
+page.on("console", (m) => (m.type() === "error" || m.type() === "warning") && console.log("CONSOLE", m.type(), m.text().slice(0, 300)));
+await page.goto(BASE + "/login");
+await page.fill("#username", creds[2][1]);
+await page.fill('input[name="password"]', creds[2][2]);
+await page.click('button[type="submit"]');
+await page.waitForURL((u) => !u.pathname.startsWith("/login"));
+await page.goto(BASE + "/tests/practice-round-1");
+await page.click("button:has-text('Start')");
+await page.waitForURL(/\/take\//);
+await page.waitForTimeout(1200);
+await page.screenshot({ path: `${OUT}/camera-consent.png` });
+await page.click("text=Turn on camera");
+await page.waitForTimeout(6000);
+await page.screenshot({ path: `${OUT}/camera-on.png` });
+await browser.close();

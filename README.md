@@ -76,6 +76,6 @@ npm test            # unit tests
 npm run build       # production build
 ```
 
-`scripts/qa/` has end-to-end scripts that drive the site in Chromium, including `desktop-handoff.mjs`, which runs the real desktop app against a local site and checks the whole handoff and lockdown (`xvfb-run -a node scripts/qa/desktop-handoff.mjs` on Linux).
+`scripts/qa/` has end-to-end scripts that drive a running site in Chromium. `npm run test:desktop` runs the real desktop app against the local site and checks the whole handoff and lockdown (wrap it in `xvfb-run -a` on Linux). Set `LABCS_APP_BIN` to test a packaged build instead.
 
 Change the database schema in `src/lib/db/schema.ts`, then run `npm run db:generate`.

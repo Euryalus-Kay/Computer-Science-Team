@@ -10,7 +10,7 @@ export async function activeAttemptFor(userId: string) {
     .select({ attempt: attempts, contest: contests })
     .from(attempts)
     .innerJoin(contests, eq(contests.id, attempts.contestId))
-    .where(and(eq(attempts.userId, userId), eq(attempts.status, "active")))
+    .where(and(eq(attempts.userId, userId), eq(attempts.status, "active"), eq(attempts.isPreview, false)))
     .limit(5);
   for (const { attempt, contest } of rows) {
     if (isExpired(contest, attempt)) continue;
