@@ -28,7 +28,8 @@ export async function askJson<T>(opts: {
     max_tokens: opts.maxTokens ?? 4000,
     betas: ["server-side-fallback-2026-07-01"],
     fallbacks: "default",
-    system: opts.system,
+    // Everything Claude writes here ends up on the site, which never uses em dashes.
+    system: `${opts.system}\n\nNever use em dashes. Use commas, colons, parentheses or periods instead.`,
     messages: [{ role: "user", content: opts.prompt }],
     output_config: {
       effort: opts.effort ?? s.aiEffort ?? "low",
