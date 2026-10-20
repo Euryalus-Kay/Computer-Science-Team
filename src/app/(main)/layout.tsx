@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { sql } from "drizzle-orm";
 import { Sidebar } from "@/components/shell/sidebar";
 import { NotConfigured } from "@/components/shell/not-configured";
+import { TempPasswordBanner } from "@/components/shell/temp-password";
 import { getSession } from "@/lib/auth/session";
 import { getSettings } from "@/lib/settings";
 import { db } from "@/lib/db";
@@ -33,7 +34,10 @@ export default async function MainLayout({ children }: { children: React.ReactNo
         initialCollapsed={collapsed}
         active={r.active}
       />
-      <main className="min-w-0 flex-1">{children}</main>
+      <main className="min-w-0 flex-1">
+        {user.mustChangePassword && <TempPasswordBanner />}
+        {children}
+      </main>
     </div>
   );
 }

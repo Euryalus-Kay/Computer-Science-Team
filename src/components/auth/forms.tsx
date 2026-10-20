@@ -15,11 +15,12 @@ function ErrorLine({ state }: { state: FormState }) {
   );
 }
 
-function PasswordInput({ name, autoComplete, placeholder }: { name: string; autoComplete: string; placeholder?: string }) {
+function PasswordInput({ id, name, autoComplete, placeholder }: { id: string; name: string; autoComplete: string; placeholder?: string }) {
   const [show, setShow] = useState(false);
   return (
     <div className="relative">
       <input
+        id={id}
         name={name}
         type={show ? "text" : "password"}
         autoComplete={autoComplete}
@@ -50,11 +51,23 @@ export function LoginForm({ next, signupEnabled }: { next?: string; signupEnable
         <label className="label" htmlFor="username">
           Username
         </label>
-        <input id="username" name="username" autoComplete="username" autoCapitalize="none" spellCheck={false} required autoFocus className="field" />
+        <input
+          id="username"
+          name="username"
+          defaultValue={state?.values?.username}
+          autoComplete="username"
+          autoCapitalize="none"
+          spellCheck={false}
+          required
+          autoFocus
+          className="field"
+        />
       </div>
       <div>
-        <label className="label">Password</label>
-        <PasswordInput name="password" autoComplete="current-password" />
+        <label className="label" htmlFor="password">
+          Password
+        </label>
+        <PasswordInput id="password" name="password" autoComplete="current-password" />
       </div>
       <Button type="submit" variant="primary" size="lg" className="w-full" disabled={pending}>
         {pending ? "Signing in…" : "Sign in"}
@@ -83,7 +96,7 @@ export function JoinForm({ code }: { code?: string }) {
         <input
           id="code"
           name="code"
-          defaultValue={code}
+          defaultValue={state?.values?.code ?? code}
           required
           autoCapitalize="characters"
           spellCheck={false}
@@ -95,17 +108,28 @@ export function JoinForm({ code }: { code?: string }) {
         <label className="label" htmlFor="name">
           Full name
         </label>
-        <input id="name" name="name" autoComplete="name" required className="field" />
+        <input id="name" name="name" defaultValue={state?.values?.name} autoComplete="name" required className="field" />
       </div>
       <div>
         <label className="label" htmlFor="username">
           Username
         </label>
-        <input id="username" name="username" autoComplete="username" autoCapitalize="none" spellCheck={false} required className="field" />
+        <input
+          id="username"
+          name="username"
+          defaultValue={state?.values?.username}
+          autoComplete="username"
+          autoCapitalize="none"
+          spellCheck={false}
+          required
+          className="field"
+        />
       </div>
       <div>
-        <label className="label">Password</label>
-        <PasswordInput name="password" autoComplete="new-password" />
+        <label className="label" htmlFor="password">
+          Password
+        </label>
+        <PasswordInput id="password" name="password" autoComplete="new-password" />
         <div className="hint">At least 6 characters.</div>
       </div>
       <Button type="submit" variant="primary" size="lg" className="w-full" disabled={pending}>
@@ -131,27 +155,43 @@ export function SetupForm({ needsToken }: { needsToken: boolean }) {
           <label className="label" htmlFor="token">
             Setup token
           </label>
-          <input id="token" name="token" required className="field font-mono" />
+          <input id="token" name="token" defaultValue={state?.values?.token} required className="field font-mono" />
         </div>
       )}
       <div>
         <label className="label" htmlFor="name">
           Your name
         </label>
-        <input id="name" name="name" autoComplete="name" required className="field" autoFocus />
+        <input id="name" name="name" defaultValue={state?.values?.name} autoComplete="name" required className="field" autoFocus />
       </div>
       <div>
         <label className="label" htmlFor="username">
           Username
         </label>
-        <input id="username" name="username" autoComplete="username" autoCapitalize="none" spellCheck={false} required className="field" />
+        <input
+          id="username"
+          name="username"
+          defaultValue={state?.values?.username}
+          autoComplete="username"
+          autoCapitalize="none"
+          spellCheck={false}
+          required
+          className="field"
+        />
       </div>
       <div>
-        <label className="label">Password</label>
-        <PasswordInput name="password" autoComplete="new-password" />
+        <label className="label" htmlFor="password">
+          Password
+        </label>
+        <PasswordInput id="password" name="password" autoComplete="new-password" />
       </div>
       <label className="flex items-start gap-2.5 rounded-md border border-line bg-panel-2 px-3 py-2.5 text-sm">
-        <input type="checkbox" name="starter" defaultChecked className="mt-0.5 accent-[var(--accent)]" />
+        <input
+          type="checkbox"
+          name="starter"
+          defaultChecked={state?.values ? state.values.starter === "on" : true}
+          className="mt-0.5 accent-[var(--accent)]"
+        />
         <span>
           <span className="font-medium">Load starter content</span>
           <span className="block text-ink-3">Intro logic test, practice problems, ACSL slides.</span>

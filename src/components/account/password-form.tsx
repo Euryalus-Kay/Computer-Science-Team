@@ -36,16 +36,22 @@ export function PasswordForm() {
     >
       {error && <div className="rounded-md bg-red-soft px-3 py-2 text-sm text-red">{error}</div>}
       <div>
-        <label className="label">Current password</label>
-        <input type="password" value={current} onChange={(e) => setCurrent(e.target.value)} autoComplete="current-password" required className="field" />
+        <label className="label" htmlFor="current-password">
+          Current password
+        </label>
+        <input id="current-password" type="password" value={current} onChange={(e) => setCurrent(e.target.value)} autoComplete="current-password" required className="field" />
       </div>
       <div>
-        <label className="label">New password</label>
-        <input type="password" value={next} onChange={(e) => setNext(e.target.value)} autoComplete="new-password" required className="field" />
+        <label className="label" htmlFor="new-password">
+          New password
+        </label>
+        <input id="new-password" type="password" value={next} onChange={(e) => setNext(e.target.value)} autoComplete="new-password" required className="field" />
       </div>
       <div>
-        <label className="label">Confirm new password</label>
-        <input type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} autoComplete="new-password" required className="field" />
+        <label className="label" htmlFor="confirm-password">
+          Confirm new password
+        </label>
+        <input id="confirm-password" type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} autoComplete="new-password" required className="field" />
       </div>
       <Button type="submit" variant="primary" disabled={pending}>
         {pending ? "Saving…" : "Update password"}

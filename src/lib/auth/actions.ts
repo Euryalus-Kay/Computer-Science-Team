@@ -10,23 +10,30 @@ import { createSession, destroySession } from "./session";
 import { checkName, checkPassword, checkUsername, normalizeUsername } from "./validate";
 import { getSettings } from "@/lib/settings";
 
-export type FormState = { error?: string; ok?: boolean } | undefined;
+/** `values` are the fields sent back after an error, so the form doesn't make people retype them. */
+export type FormState = { error?: string; ok?: boolean; values?: Record<string, string> } | undefined;
 
 function safeNext(next: FormDataEntryValue | null): string {
   const n = typeof next === "string" ? next : "";
   return n.startsWith("/") && !n.startsWith("//") ? n : "/";
 }
 
+function field(form: FormData, key: string): string {
+  return String(form.get(key) ?? "");
+}
+
 export async function loginAction(_: FormState, form: FormData): Promise<FormState> {
-  const username = normalizeUsername(String(form.get("username") ?? ""));
-  const password = String(form.get("password") ?? "");
-  if (!username || !password) return { error: "Enter your username and password." };
+  const values = { username: field(form, "username") };
+  const fail = (error: string): FormState => ({ error, values });
+  const username = normalizeUsername(values.username);
+  const password = field(form, "password");
+  if (!username || !password) return fail("Enter your username and password.");
   const d = await db();
   const [user] = await d.select().from(users).where(eq(users.username, username)).limit(1);
-  if (!user || user.disabled) return { error: "Username or password is incorrect." };
+  if (!user) return fail("Username or password is incorrect.");
   if (user.lockedUntil && user.lockedUntil.getTime() > Date.now()) {
     const mins = Math.ceil((user.lockedUntil.getTime() - Date.now()) / 60000);
-    return { error: `Too many attempts. Try again in ${mins} min.` };
+    return fail(`Too many attempts. Try again in ${mins} min.`);
   }
   const ok = await verifyPassword(password, user.passwordHash);
   if (!ok) {
@@ -35,25 +42,31 @@ export async function loginAction(_: FormState, form: FormData): Promise<FormSta
       .update(users)
       .set({ failedLogins: failed, lockedUntil: failed >= 8 ? new Date(Date.now() + 5 * 60_000) : null })
       .where(eq(users.id, user.id));
-    return { error: "Username or password is incorrect." };
+    return fail("Username or password is incorrect.");
   }
+  // Only said once the password is right, so it doesn't reveal which accounts exist.
+  if (user.disabled) return fail("This account is turned off. Ask an admin to turn it back on.");
   await createSession(user.id, "web");
-  redirect(safeNext(form.get("next")));
+  const next = safeNext(form.get("next"));
+  // A temporary password from an admin: ask for a new one first, unless they were headed somewhere.
+  redirect(user.mustChangePassword && next === "/" ? "/account" : next);
 }
 
 export async function joinAction(_: FormState, form: FormData): Promise<FormState> {
+  const values = { code: field(form, "code"), name: field(form, "name"), username: field(form, "username") };
+  const fail = (error: string): FormState => ({ error, values });
   const s = await getSettings();
-  if (!s.signupEnabled) return { error: "Sign-up is closed. Ask an admin for an account." };
-  const code = String(form.get("code") ?? "").trim().toUpperCase();
-  if (!code || code !== s.joinCode.toUpperCase()) return { error: "That join code isn't right." };
-  const name = String(form.get("name") ?? "").trim();
-  const username = normalizeUsername(String(form.get("username") ?? ""));
-  const password = String(form.get("password") ?? "");
+  if (!s.signupEnabled) return fail("Sign-up is closed. Ask an admin for an account.");
+  const code = values.code.trim().toUpperCase();
+  if (!code || code !== s.joinCode.toUpperCase()) return fail("That join code isn't right.");
+  const name = values.name.trim();
+  const username = normalizeUsername(values.username);
+  const password = field(form, "password");
   const err = checkName(name) ?? checkUsername(username) ?? checkPassword(password);
-  if (err) return { error: err };
+  if (err) return fail(err);
   const d = await db();
   const [exists] = await d.select({ id: users.id }).from(users).where(eq(users.username, username)).limit(1);
-  if (exists) return { error: "That username is taken." };
+  if (exists) return fail("That username is taken.");
   const id = newId();
   await d.insert(users).values({ id, username, name, passwordHash: await hashPassword(password), role: "member" });
   await createSession(id, "web");
@@ -61,16 +74,17 @@ export async function joinAction(_: FormState, form: FormData): Promise<FormStat
 }
 
 export async function setupAction(_: FormState, form: FormData): Promise<FormState> {
+  const values = { name: field(form, "name"), username: field(form, "username"), starter: form.get("starter") === "on" ? "on" : "" };
   const d = await db();
   const [{ count }] = await d.select({ count: sql<number>`count(*)::int` }).from(users);
   if (count > 0) return { error: "Setup is already complete." };
   const token = process.env.SETUP_TOKEN;
-  if (token && String(form.get("token") ?? "") !== token) return { error: "Setup token is incorrect." };
-  const name = String(form.get("name") ?? "").trim();
-  const username = normalizeUsername(String(form.get("username") ?? ""));
-  const password = String(form.get("password") ?? "");
+  if (token && field(form, "token").trim() !== token) return { error: "Setup token is incorrect.", values };
+  const name = values.name.trim();
+  const username = normalizeUsername(values.username);
+  const password = field(form, "password");
   const err = checkName(name) ?? checkUsername(username) ?? checkPassword(password);
-  if (err) return { error: err };
+  if (err) return { error: err, values: { ...values, token: field(form, "token") } };
   const id = newId();
   await d.insert(users).values({
     id,
