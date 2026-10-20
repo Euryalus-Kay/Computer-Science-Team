@@ -116,6 +116,7 @@ export function Runner(props: RunnerProps) {
       if (on) beenFullscreen.current = true;
       if (contest.integrity.requireFullscreen && !props.desktop) setNeedFullscreen(!on);
     },
+    onPasteBlocked: () => setNotice("Pasting is turned off for this test."),
   });
 
   // Flags persist locally.

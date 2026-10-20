@@ -26,6 +26,7 @@ export type IntegrityOptions = {
   currentItem: () => string | null;
   onReturn?: (awayMs: number) => void;
   onFullscreenChange?: (on: boolean) => void;
+  onPasteBlocked?: () => void;
 };
 
 /** Watches the page for signs of leaving the test and queues events for the heartbeat. */
@@ -112,6 +113,7 @@ export function useIntegrity(opts: IntegrityOptions) {
       if (blocked) {
         e.preventDefault();
         e.stopPropagation();
+        ref.current.onPasteBlocked?.();
       }
     };
     const onContext = (e: MouseEvent) => {
