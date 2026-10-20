@@ -1,5 +1,9 @@
+import fs from "node:fs";
+import path from "node:path";
 import { chromium } from "@playwright/test";
-export const OUT = process.env.SHOTS_DIR || "/tmp/claude-0/-home-user-Computer-Science-Team/a0644c86-17e1-54a3-90f6-276a1a04d406/scratchpad/shots";
+// Screenshots go to .qa/shots in the repo (git ignores it) unless SHOTS_DIR says otherwise.
+export const OUT = process.env.SHOTS_DIR || path.resolve(import.meta.dirname, "../../.qa/shots");
+fs.mkdirSync(OUT, { recursive: true });
 export const BASE = process.env.BASE_URL || "http://localhost:3000";
 
 export async function open({ width = 1440, height = 900, theme = "light", scale = 2 } = {}) {

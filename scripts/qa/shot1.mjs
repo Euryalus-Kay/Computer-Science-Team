@@ -1,6 +1,5 @@
 import { chromium } from "@playwright/test";
-const OUT = "/tmp/claude-0/-home-user-Computer-Science-Team/a0644c86-17e1-54a3-90f6-276a1a04d406/scratchpad/shots";
-const base = "http://localhost:3000";
+import { OUT, BASE as base } from "./lib.mjs";
 const browser = await chromium.launch();
 const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 2 });
 const page = await ctx.newPage();
