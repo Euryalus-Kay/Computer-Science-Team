@@ -317,14 +317,15 @@ export const lights: WidgetModule<object, LightsPub, object, { presses: number[]
       const cells = rng.shuffle(Array.from({ length: size * size }, (_, i) => i)).slice(0, rng.int(4, 5));
       for (const c of cells) start = press(start, size, c);
       const min = minPresses(start, size);
-      if (min >= 4 && start.some(Boolean)) return { pub: { size, start, min }, key: {}, vars: { min } };
+      if (min >= 4 && start.some(Boolean)) return { pub: { size, start, min }, key: {}, vars: { min, limit: min + 2 } };
     }
   },
   grade(pub, _k, r) {
     let b = [...pub.start];
-    const presses = (r?.presses ?? []).slice(0, 200);
+    const presses = r?.presses ?? [];
     for (const i of presses) b = press(b, pub.size, i);
     if (!b.every((x) => !x)) return { fraction: 0 };
+    // The prompt promises full marks within two presses of the best.
     return { fraction: presses.length <= pub.min + 2 ? 1 : 0.6 };
   },
 };

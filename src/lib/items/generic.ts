@@ -74,9 +74,9 @@ export function matchesShort(text: string, c: ShortConfig): boolean {
     const a = normalizeText(text, c.caseSensitive);
     const b = normalizeText(acc, c.caseSensitive);
     if (a === b) return true;
-    const na = Number(a.replace(/,/g, ""));
-    const nb = Number(b.replace(/,/g, ""));
-    if (a !== "" && Number.isFinite(na) && Number.isFinite(nb) && na === nb) return true;
+    const na = parseNumber(a);
+    const nb = parseNumber(b);
+    if (na !== null && nb !== null && na === nb) return true;
   }
   return false;
 }
@@ -91,10 +91,13 @@ export function genNumeric(_: Rng, c: NumericConfig): Generated<{ unit?: string 
 export function parseNumber(s: string): number | null {
   const t = s.trim().replace(/,/g, "").replace(/\s+/g, "");
   if (!t) return null;
-  if (/^-?\d+\/\d+$/.test(t)) {
+  if (/^[+-]?\d+\/\d+$/.test(t)) {
     const [a, b] = t.split("/").map(Number);
     return b ? a / b : null;
   }
+  // Plain decimals only. Number() would also read 0x2F, 0b101 or 1e3, which would let
+  // someone type the hex from a conversion question and get it right.
+  if (!/^[+-]?(\d+\.?\d*|\.\d+)$/.test(t)) return null;
   const n = Number(t);
   return Number.isFinite(n) ? n : null;
 }

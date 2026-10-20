@@ -421,7 +421,7 @@ export function Rail({ item, value, onChange, disabled }: ItemProps<{ cars: numb
         </div>
         <div className="flex justify-center">
           <div className="w-[120px]">
-            <div className="mb-1.5 text-center text-xs font-medium text-ink-3">Siding (top car leaves first)</div>
+            <div className="mb-1.5 text-center text-xs font-medium whitespace-nowrap text-ink-3">Siding · top leaves first</div>
             <div className="flex min-h-[120px] flex-col items-center gap-1.5 rounded-lg border border-line bg-panel-2 p-1.5">
               {[...s.siding].reverse().map((c) => (
                 <Car key={c} n={c} />
@@ -535,7 +535,7 @@ export function Scale({ item, value, onChange, disabled }: ItemProps<{ coins: nu
         </div>
         <div className="mt-5 border-t border-line pt-4">
           <div className="mb-2 text-xs font-medium text-ink-3">
-            {used ? "Click the coin you think is light." : "Coins (click to put on the left pan, again for right, again to take off)"}
+            {used ? "Click the coin you think is light." : "Coins: click once for the left pan, twice for the right, three times to take off. Each weighing is final."}
           </div>
           <div className="flex flex-wrap gap-2">
             {Array.from({ length: coins }, (_, i) => i + 1)
@@ -603,14 +603,13 @@ export function Lights({ item, value, onChange, disabled }: ItemProps<{ size: nu
           <div className="num text-sm">
             <span className="text-2xl font-semibold">{presses.length}</span> <span className="text-ink-3">presses</span>
           </div>
-          <div className="text-sm text-ink-3">Best possible: {min}</div>
-          {solved ? (
-            <div className="text-sm font-medium text-accent">All off.</div>
-          ) : (
-            <Button size="sm" icon={<RotateCcw className="size-3.5" />} onClick={() => !disabled && onChange({ presses: [] })} disabled={!presses.length}>
-              Start over
-            </Button>
+          <div className="text-sm text-ink-3">Full marks in {min + 2} or fewer</div>
+          {solved && (
+            <div className="text-sm font-medium text-accent">{presses.length <= min + 2 ? "All off." : "All off, but over the limit."}</div>
           )}
+          <Button size="sm" icon={<RotateCcw className="size-3.5" />} onClick={() => !disabled && onChange({ presses: [] })} disabled={disabled || !presses.length}>
+            Start over
+          </Button>
         </div>
       </div>
     </Stage>

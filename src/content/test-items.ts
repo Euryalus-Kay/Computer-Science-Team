@@ -192,7 +192,8 @@ export const INTRO_ITEMS: SeedItem[] = [
     section: "Challenge",
     type: "widget",
     title: "Lights",
-    prompt: "Pressing a light switches it and the lights directly above, below, left and right of it. Turn every light off.",
+    prompt:
+      "Pressing a light switches it and the lights directly above, below, left and right of it. Turn every light off. Full marks if you use {{limit}} presses or fewer.",
     points: 3,
     config: W("lights"),
   },

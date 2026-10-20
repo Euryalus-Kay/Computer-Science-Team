@@ -68,10 +68,9 @@ export const gears: WidgetModule<object, GearsPub, GearsKey, { dir?: string; tur
   },
   grade(_p, key, r) {
     if (!r) return { fraction: 0 };
-    let f = 0;
-    if (r.dir === key.dir) f += 0.5;
-    if (Number(String(r.turns ?? "").trim()) === key.turns) f += 0.5;
-    return { fraction: f };
+    // The direction is a coin flip on its own, so only the worked-out turns earn partial credit.
+    const turns = Number(String(r.turns ?? "").trim()) === key.turns;
+    return { fraction: turns ? (r.dir === key.dir ? 1 : 0.5) : 0 };
   },
   describeKey: (_p, k) => `${k.dir === "cw" ? "Clockwise" : "Counterclockwise"}, ${k.turns} turns`,
 };

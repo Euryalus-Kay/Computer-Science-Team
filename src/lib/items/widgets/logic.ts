@@ -280,8 +280,10 @@ const LONG_WORDS = ["PUZZLE", "SIGNAL", "ORBIT", "VECTOR", "BINARY", "CASTLE", "
 type CipherPub = { examples: { plain: string; code: string }[]; code: string };
 export const cipher: WidgetModule<object, CipherPub, { answer: string }, { text: string }> = {
   generate(rng) {
-    const [e1, e2, e3] = rng.shuffle(SHORT_WORDS);
+    const [e1, e2] = rng.shuffle(SHORT_WORDS);
     const word = rng.pick(LONG_WORDS);
+    // One example as long as the coded word, so the shift for every letter is shown.
+    const e3 = rng.pick(LONG_WORDS.filter((w) => w !== word && w.length >= word.length));
     return {
       pub: {
         examples: [e1, e2, e3].map((w) => ({ plain: w, code: shiftByPosition(w) })),
