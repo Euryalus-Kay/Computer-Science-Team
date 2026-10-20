@@ -1,5 +1,5 @@
 // Lab CS desktop app: opens tests from the website in a locked-down window.
-const { app, BrowserWindow, session, screen, clipboard, ipcMain, shell, powerSaveBlocker, Menu, dialog } = require("electron");
+const { app, BrowserWindow, session, screen, clipboard, ipcMain, shell, powerSaveBlocker, Menu, dialog, net } = require("electron");
 const path = require("node:path");
 const fs = require("node:fs");
 const crypto = require("node:crypto");
@@ -143,8 +143,26 @@ function findLink(argv) {
   return argv.find((a) => typeof a === "string" && a.startsWith(`${SCHEME}://`)) ?? null;
 }
 
+function older(a, b) {
+  const pa = String(a).split(".").map((x) => Number(x) || 0);
+  const pb = String(b).split(".").map((x) => Number(x) || 0);
+  for (let i = 0; i < 3; i++) if ((pa[i] || 0) !== (pb[i] || 0)) return (pa[i] || 0) < (pb[i] || 0);
+  return false;
+}
+
+/** Asks the site for the oldest app version it accepts. */
+async function needsUpdate(origin) {
+  try {
+    const r = await net.fetch(`${origin}/api/desktop/info`);
+    const j = await r.json();
+    return j && j.minVersion ? older(VERSION, j.minVersion) : false;
+  } catch {
+    return false;
+  }
+}
+
 /** labcs://open?server=https://site&token=abc → sign in and open the test. */
-function openLink(raw) {
+async function openLink(raw) {
   if (!win) {
     pendingUrl = raw;
     return;
@@ -163,10 +181,27 @@ function openLink(raw) {
     server = origin;
     writeConfig({ server });
   }
+  if (!locked && (await needsUpdate(server))) {
+    const { response } = await dialog.showMessageBox(win, {
+      type: "info",
+      message: "Update the Lab CS app",
+      detail: "This test needs a newer version. Install it, then press Open in app again.",
+      buttons: ["Download", "Not now"],
+      defaultId: 0,
+    });
+    if (response === 0) shell.openExternal(`${server}/app`);
+    return;
+  }
+  if (!token) {
+    // The website's "Open the app" check: just come to the front.
+    win.show();
+    win.focus();
+    return showHome();
+  }
   if (!locked) win.setFullScreen(true);
   win.show();
   win.focus();
-  win.loadURL(token ? `${server}/desktop/launch?token=${encodeURIComponent(token)}` : `${server}/tests`);
+  win.loadURL(`${server}/desktop/launch?token=${encodeURIComponent(token)}`);
 }
 
 function showHome() {
