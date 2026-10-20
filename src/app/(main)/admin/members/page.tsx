@@ -6,6 +6,7 @@ import { groupMembers, groups, users } from "@/lib/db/schema";
 import { getSettings } from "@/lib/settings";
 import { Page, PageHeader } from "@/components/ui/page";
 import { MembersView } from "@/components/admin/members-view";
+import { pluralize } from "@/lib/format";
 
 export const metadata: Metadata = { title: "Members" };
 
@@ -36,7 +37,7 @@ export default async function MembersPage() {
   }));
   return (
     <Page wide>
-      <PageHeader title="Members" meta={<span>{members.length} accounts</span>} />
+      <PageHeader title="Members" meta={<span>{pluralize(members.length, "account")}</span>} />
       <MembersView
         meId={me.user.id}
         members={members}

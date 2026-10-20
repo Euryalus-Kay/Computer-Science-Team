@@ -10,6 +10,7 @@ import { Page, PageHeader, Empty } from "@/components/ui/page";
 import { LinkButton } from "@/components/ui/button";
 import { Difficulty } from "@/components/problems/difficulty";
 import { PublishToggle } from "@/components/admin/publish-toggle";
+import { pluralize } from "@/lib/format";
 
 export const metadata: Metadata = { title: "Manage problems" };
 
@@ -26,7 +27,7 @@ export default async function AdminProblems() {
     <Page wide>
       <PageHeader
         title="Problems"
-        meta={<span>{rows.length} problems</span>}
+        meta={<span>{pluralize(rows.length, "problem")}</span>}
         actions={
           <LinkButton href="/admin/problems/new" variant="primary" icon={<Plus className="size-4" />}>
             New problem

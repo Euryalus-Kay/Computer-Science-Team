@@ -6,7 +6,7 @@ import { db } from "@/lib/db";
 import { attempts, contestItems, contests } from "@/lib/db/schema";
 import { testStatus } from "@/lib/tests/status";
 import { getSettings } from "@/lib/settings";
-import { formatDate } from "@/lib/format";
+import { formatDate, pluralize } from "@/lib/format";
 import { RowLink } from "@/components/ui/row-link";
 import { Page, PageHeader, Empty } from "@/components/ui/page";
 import { Badge } from "@/components/ui/badge";
@@ -40,7 +40,7 @@ export default async function AdminTests() {
   const takenBy = new Map(taken.map((t) => [t.id, t]));
   return (
     <Page wide>
-      <PageHeader title="Tests" meta={<span>{rows.length} tests</span>} actions={<NewTestButton />} />
+      <PageHeader title="Tests" meta={<span>{pluralize(rows.length, "test")}</span>} actions={<NewTestButton />} />
       <div className="card overflow-x-auto">
         {rows.length === 0 ? (
           <Empty title="No tests yet" action={<NewTestButton label="Create a test" />} />

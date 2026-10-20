@@ -5,7 +5,7 @@ import { requireAdmin } from "@/lib/auth/session";
 import { listDecks } from "@/lib/decks";
 import { splitSlides } from "@/lib/board";
 import { getSettings } from "@/lib/settings";
-import { formatDate } from "@/lib/format";
+import { formatDate, pluralize } from "@/lib/format";
 import { Page, PageHeader, Empty } from "@/components/ui/page";
 import { LinkButton } from "@/components/ui/button";
 import { RowLink } from "@/components/ui/row-link";
@@ -25,7 +25,7 @@ export default async function AdminSlides() {
   );
   return (
     <Page wide>
-      <PageHeader title="Slides" meta={<span>{rows.length} decks</span>} actions={add} />
+      <PageHeader title="Slides" meta={<span>{pluralize(rows.length, "deck")}</span>} actions={add} />
       <div className="card overflow-hidden">
         {rows.length === 0 ? (
           <Empty title="No slides yet" icon={<Presentation className="size-6" />} action={add} />

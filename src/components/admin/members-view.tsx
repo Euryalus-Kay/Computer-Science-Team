@@ -28,7 +28,7 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/components/ui/toast";
 import { Empty } from "@/components/ui/page";
 import { cn } from "@/lib/cn";
-import { relativeTime } from "@/lib/format";
+import { relativeTime, pluralize } from "@/lib/format";
 import {
   addMembers,
   createGroup,
@@ -329,7 +329,7 @@ export function MembersView({
             <button
               className="h-7 rounded-md px-2 hover:bg-panel/10"
               onClick={() => {
-                if (confirm(`Delete ${selected.size} accounts?`)) run(deleteMembers([...selected]), () => setSelected(new Set()));
+                if (confirm(`Delete ${pluralize(selected.size, "account")}?`)) run(deleteMembers([...selected]), () => setSelected(new Set()));
               }}
             >
               Delete
