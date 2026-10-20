@@ -11,6 +11,7 @@ export const EVENT_TYPES = new Set([
   "focus",
   "fullscreen_enter",
   "fullscreen_exit",
+  "fullscreen_unsupported",
   "paste",
   "copy",
   "cut",
@@ -90,6 +91,7 @@ export function severityOf(e: ClientEvent): Severity {
     case "contextmenu":
     case "shortcut":
     case "print":
+    case "fullscreen_unsupported":
       return "low";
     case "idle":
       return n(d.ms) >= 180_000 ? "low" : "info";
@@ -107,6 +109,7 @@ export const EVENT_LABEL: Record<string, string> = {
   focus: "Came back from another window",
   fullscreen_enter: "Entered full screen",
   fullscreen_exit: "Left full screen",
+  fullscreen_unsupported: "Browser can't go full screen",
   paste: "Pasted text",
   copy: "Copied text",
   cut: "Cut text",

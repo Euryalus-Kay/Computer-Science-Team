@@ -280,7 +280,12 @@ export function Runner(props: RunnerProps) {
 
   useEffect(() => {
     if (document.fullscreenElement) beenFullscreen.current = true;
-    else if (contest.integrity.requireFullscreen && !props.desktop) setNeedFullscreen(true);
+    else if (contest.integrity.requireFullscreen && !props.desktop) {
+      // Some browsers, like Safari on iPhone, can't put a page in full screen. Don't hold them at the overlay.
+      if (document.fullscreenEnabled) setNeedFullscreen(true);
+      else integrity.push("fullscreen_unsupported");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contest.integrity.requireFullscreen, props.desktop]);
 
   const submit = useCallback(

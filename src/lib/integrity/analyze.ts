@@ -84,6 +84,7 @@ const SERVER_FLAGS: [string, string, Flag["severity"]][] = [
   ["desktop_clipboard", "Clipboard changed from another app during the test.", "high"],
   ["desktop_apps", "Assistant, chat or remote-control apps were running.", "high"],
   ["second_device", "Signed in on a second device during the test.", "medium"],
+  ["fullscreen_unsupported", "Used a browser that can't go full screen, so full screen wasn't enforced.", "low"],
 ];
 
 /** Flags that follow from the stats and the set of event types seen. */
