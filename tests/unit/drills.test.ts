@@ -81,4 +81,15 @@ describe("drills", () => {
       }
     }
   });
+
+  it("boolean steps only put values in for the variables", () => {
+    const bool = TOPICS.find((t) => t.id === "boolean")!;
+    for (let s = 1; s <= 300; s++) {
+      const q = bool.make(rng(s));
+      const sub = q.steps.find((x) => x.startsWith("Substitute"));
+      if (!sub) continue;
+      const words = sub.replace(/^Substitute: /, "").replace(/[()]/g, " ").split(/\s+/).filter(Boolean);
+      for (const w of words) expect(["0", "1", "NOT", "AND", "OR", "XOR"], `seed ${s}: ${sub}`).toContain(w);
+    }
+  });
 });

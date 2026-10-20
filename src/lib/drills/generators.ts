@@ -238,7 +238,7 @@ function boolean(r: () => number): Drill {
       code: e.s,
       answer: ans,
       hint: "0 or 1",
-      steps: [`Substitute: ${e.s.replace(/[ABC]/g, (k) => String(v[k]))}`, `= ${ans}`],
+      steps: [`Substitute: ${e.s.replace(/\b[ABC]\b/g, (k) => String(v[k]))}`, `= ${ans}`],
       check: (s) => s.trim() === ans,
     };
   }
