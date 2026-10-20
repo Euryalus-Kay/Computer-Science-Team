@@ -220,15 +220,19 @@ function TestView({ test, now, origin, host }: { test: BoardTest; now: number | 
     );
   }
   if (!lead) return main;
+  // Equal scores share a place, as on the leaderboard page.
+  const shown = test.leaders.map((l) => Math.round(l.score * 10) / 10);
+  const places: number[] = [];
+  shown.forEach((v, i) => places.push(i > 0 && v === shown[i - 1] ? places[i - 1] : i + 1));
   return (
     <div className="grid w-full grid-cols-[1fr_32cqw] items-center gap-[4cqw]">
       {main}
       <ol className="space-y-[1.1cqh]">
         {test.leaders.map((l, i) => (
           <li key={i} className="flex items-baseline gap-[1.2cqw] text-[2cqw]">
-            <span className="num w-[2.4cqw] text-right font-mono text-white/40">{i + 1}</span>
+            <span className="num w-[2.4cqw] text-right font-mono text-white/40">{places[i]}</span>
             <span className="min-w-0 flex-1 truncate">{l.name}</span>
-            <span className="num font-mono text-white/70">{Math.round(l.score * 10) / 10}</span>
+            <span className="num font-mono text-white/70">{shown[i]}</span>
           </li>
         ))}
       </ol>

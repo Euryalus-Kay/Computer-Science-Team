@@ -60,9 +60,10 @@ export function BoardControls({
     "inline-flex h-8 items-center gap-1.5 rounded-md px-3 text-sm font-medium transition-colors disabled:opacity-40",
     dark ? "bg-white text-[#0b0d10] hover:bg-white/85" : "bg-accent text-white hover:bg-accent-hover",
   );
+  // Light fields take their padding from .field, which leaves room for a select's arrow.
   const field = cn(
-    "h-8 rounded-md px-2.5 text-sm outline-none",
-    dark ? "border border-white/15 bg-white/10 text-white placeholder:text-white/40 [&>option]:text-black" : "field field-sm w-auto",
+    "h-8 rounded-md text-sm outline-none",
+    dark ? "border border-white/15 bg-white/10 px-2.5 text-white placeholder:text-white/40 [&>option]:text-black" : "field field-sm w-auto",
   );
   const t = data.test;
   const deck = data.deck;
