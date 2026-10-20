@@ -456,6 +456,20 @@ function ControlBar({
         Open now
       </Button>
     );
+  } else if (s.state === "closed" && live && test.status !== "archived" && snap.rows.some((r) => !r.preview && r.status === "active")) {
+    // Late starters keep their full time after the shared end.
+    label = "Late starters finishing";
+    big = <span>{snap.rows.filter((r) => !r.preview && r.status === "active").length} still working</span>;
+    actions = (
+      <>
+        <Link href={`/admin/tests/${test.id}/results`} className="inline-flex h-10 items-center rounded-md bg-ink px-4 text-base font-medium text-panel hover:bg-ink/85">
+          Results
+        </Link>
+        <Button variant="danger" size="lg" icon={<Square className="size-3.5 fill-current" />} disabled={pending} onClick={onEnd}>
+          End now
+        </Button>
+      </>
+    );
   } else if (s.state === "closed") {
     label = test.status === "archived" ? "Archived" : "Ended";
     big = <span className="text-ink-3">Closed</span>;

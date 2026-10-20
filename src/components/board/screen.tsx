@@ -215,6 +215,12 @@ function TestView({ test, now, origin, host }: { test: BoardTest; now: number | 
         <div className="text-[16cqh] leading-tight font-semibold tracking-[-0.03em]">Time</div>
         <div className="mt-[1cqh] text-[2.2cqw] text-white/55">
           <span className="text-white">{test.submitted}</span> submitted
+          {test.working > 0 && (
+            <>
+              {" "}
+              · <span className="text-white">{test.working}</span> still working
+            </>
+          )}
         </div>
       </div>
     );

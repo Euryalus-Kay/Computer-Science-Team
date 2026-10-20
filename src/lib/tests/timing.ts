@@ -46,36 +46,54 @@ export function pausedWithin(pauses: PauseWindow[], from: number, to: number, no
   return total;
 }
 
+/** Pushes `base` back by the pauses that overlap [from, deadline]. Iterates because a later deadline can take in more pause time. */
+function withPauses(c: TimingContest, base: number, from: number, now: number): number {
+  let deadline = base;
+  for (let i = 0; i < 8; i++) {
+    const next = base + pausedWithin(c.pauses, from, deadline, now);
+    if (next === deadline) break;
+    deadline = next;
+  }
+  return deadline;
+}
+
 /**
  * Absolute deadline for an attempt in ms since epoch, or null if untimed.
- * Pauses that overlap the attempt window push the deadline back; we iterate
- * because extending the window can pull in more pause time.
+ * Live tests end for everyone at the shared end time, but someone who starts late still gets the full
+ * duration from their own start. Pauses only count from when each clock starts.
  */
 export function attemptDeadline(c: TimingContest, a: TimingAttempt, now = Date.now()): number | null {
   if (a.isPreview) return c.durationMin ? a.startedAt.getTime() + c.durationMin * 60_000 + a.extraSeconds * 1000 : null;
   const extras = (c.extraSeconds + a.extraSeconds) * 1000;
-  let base: number | null = null;
   const start = a.startedAt.getTime();
+  const own = c.durationMin ? start + c.durationMin * 60_000 : null;
+  let deadline: number | null = null;
   if (c.startMode === "live") {
-    if (c.liveEndAt) base = c.liveEndAt.getTime();
-    else if (c.durationMin) base = start + c.durationMin * 60_000;
-  } else if (c.durationMin) {
-    base = start + c.durationMin * 60_000;
+    const shared = c.liveEndAt ? withPauses(c, c.liveEndAt.getTime() + extras, c.liveStartAt ? Math.min(start, c.liveStartAt.getTime()) : start, now) : null;
+    const late = own !== null ? withPauses(c, own + extras, start, now) : null;
+    deadline = shared === null ? late : late === null ? shared : Math.max(shared, late);
+  } else {
+    let base = own;
+    if (c.closesAt) base = base === null ? c.closesAt.getTime() : Math.min(base, c.closesAt.getTime());
+    if (base !== null) deadline = withPauses(c, base + extras, start, now);
   }
-  if (c.closesAt && c.startMode === "open") {
-    base = base === null ? c.closesAt.getTime() : Math.min(base, c.closesAt.getTime());
-  }
-  if (base === null) return null;
-  const from = c.startMode === "live" && c.liveStartAt ? Math.min(start, c.liveStartAt.getTime()) : start;
-  let deadline = base + extras;
-  for (let i = 0; i < 8; i++) {
-    const next = base + extras + pausedWithin(c.pauses, from, deadline, now);
-    if (next === deadline) break;
-    deadline = next;
-  }
+  if (deadline === null) return null;
   // A close time is a hard stop, which is how "End now" works for live tests.
   if (c.closesAt) deadline = Math.min(deadline, c.closesAt.getTime());
   return deadline;
+}
+
+/**
+ * Whether nobody can still be working: joining a live test stops at the shared end, and the latest
+ * starter then has the full duration. Used for results and leaderboards shown "after it closes".
+ */
+export function overForEveryone(c: TimingContest, now = Date.now()): boolean {
+  const a = availability(c, now);
+  if (a.state !== "closed") return false;
+  if (c.closesAt && now >= c.closesAt.getTime()) return true;
+  if (c.startMode !== "live" || !c.liveEndAt || !c.liveStartAt || !c.durationMin) return true;
+  const end = c.liveEndAt.getTime() + c.extraSeconds * 1000 + pausedWithin(c.pauses, c.liveStartAt.getTime(), Infinity, now);
+  return now >= end + c.durationMin * 60_000;
 }
 
 export function remainingMs(c: TimingContest, a: TimingAttempt, now = Date.now()): number | null {

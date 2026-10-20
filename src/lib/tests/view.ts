@@ -1,7 +1,7 @@
 import { and, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { attempts, contestItems, contests } from "@/lib/db/schema";
-import { availability, attemptDeadline } from "./timing";
+import { availability, attemptDeadline, overForEveryone } from "./timing";
 import { userGroupIds, visibleTo, type ContestRow } from "./attempts";
 import { sql } from "drizzle-orm";
 
@@ -28,7 +28,7 @@ export type TestCard = {
 
 export function resultsVisible(c: ContestRow): boolean {
   if (c.showResults === "after_submit") return true;
-  if (c.showResults === "after_close") return availability(c).state === "closed";
+  if (c.showResults === "after_close") return overForEveryone(c);
   return false;
 }
 

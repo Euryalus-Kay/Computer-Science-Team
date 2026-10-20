@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { attemptDeadline, availability, isExpired, remainingMs, type TimingContest } from "@/lib/tests/timing";
+import { attemptDeadline, availability, isExpired, overForEveryone, remainingMs, type TimingContest } from "@/lib/tests/timing";
 
 const T0 = Date.parse("2026-10-20T15:00:00Z");
 const min = 60_000;
@@ -21,9 +21,31 @@ function live(over: Partial<TimingContest> = {}): TimingContest {
 const attempt = (startOffset = 0, extraSeconds = 0) => ({ startedAt: new Date(T0 + startOffset), extraSeconds, status: "active" as const });
 
 describe("test timing", () => {
-  it("live tests end at the shared end time, even for late joiners", () => {
+  it("live tests end at the shared end time, and late joiners get their full time", () => {
     expect(attemptDeadline(live(), attempt(0))).toBe(T0 + 30 * min);
-    expect(attemptDeadline(live(), attempt(7 * min))).toBe(T0 + 30 * min);
+    expect(attemptDeadline(live(), attempt(7 * min))).toBe(T0 + 37 * min);
+    expect(attemptDeadline(live(), attempt(29 * min))).toBe(T0 + 59 * min);
+  });
+
+  it("a late joiner's clock only counts pauses after they start", () => {
+    const pause = { start: new Date(T0 + 10 * min).toISOString(), end: new Date(T0 + 14 * min).toISOString() };
+    const c = live({ pauses: [pause] });
+    expect(attemptDeadline(c, attempt(0), T0 + 20 * min)).toBe(T0 + 34 * min);
+    expect(attemptDeadline(c, attempt(5 * min), T0 + 20 * min)).toBe(T0 + 39 * min);
+    expect(attemptDeadline(c, attempt(20 * min), T0 + 25 * min)).toBe(T0 + 50 * min);
+  });
+
+  it("End now stops late joiners too", () => {
+    const c = live({ closesAt: new Date(T0 + 32 * min) });
+    expect(attemptDeadline(c, attempt(20 * min))).toBe(T0 + 32 * min);
+  });
+
+  it("a live test is over for everyone once the last possible late joiner is done", () => {
+    expect(availability(live(), T0 + 31 * min).state).toBe("closed");
+    expect(overForEveryone(live(), T0 + 31 * min)).toBe(false);
+    expect(overForEveryone(live(), T0 + 60 * min)).toBe(true);
+    expect(overForEveryone(live({ closesAt: new Date(T0 + 31 * min) }), T0 + 31 * min)).toBe(true);
+    expect(overForEveryone(live(), T0 + 10 * min)).toBe(false);
   });
 
   it("extra time for everyone and for one person adds up", () => {

@@ -5,7 +5,7 @@ import { Trophy } from "lucide-react";
 import { requireUser } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import { attempts, contests, submissions, users } from "@/lib/db/schema";
-import { availability } from "@/lib/tests/timing";
+import { overForEveryone } from "@/lib/tests/timing";
 import { getSettings } from "@/lib/settings";
 import { pts } from "@/lib/format";
 import { Page, PageHeader, Empty } from "@/components/ui/page";
@@ -50,7 +50,7 @@ export default async function LeaderboardPage(props: PageProps<"/leaderboard">) 
   const settings = await getSettings();
 
   const all = await d.select().from(contests).where(and(eq(contests.status, "published"), sql`${contests.leaderboard} <> 'off'`)).orderBy(desc(contests.updatedAt));
-  const shown = all.filter((c) => c.leaderboard === "live" || availability(c).state === "closed");
+  const shown = all.filter((c) => c.leaderboard === "live" || overForEveryone(c));
   const current = tab ? shown.find((c) => c.id === tab) : null;
   const practiceOn = settings.practiceLeaderboard;
   const active = current ? current.id : practiceOn ? "practice" : (shown[0]?.id ?? "practice");
