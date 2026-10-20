@@ -4,6 +4,8 @@ import { problems, problemTests, submissions, type SubmissionDetail } from "@/li
 import { runBatch, verdictOf, type Checker, type Verdict } from "@/lib/runner";
 import { newId } from "@/lib/ids";
 
+export { slugify } from "./slug";
+
 export type ProblemRow = typeof problems.$inferSelect;
 export type TestRow = typeof problemTests.$inferSelect;
 
@@ -156,14 +158,3 @@ export async function userSubmissions(userId: string, problemId: string, limit =
     .limit(limit);
 }
 
-export function slugify(s: string) {
-  return (
-    s
-      .toLowerCase()
-      .normalize("NFKD")
-      .replace(/[̀-ͯ]/g, "")
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "")
-      .slice(0, 60) || "untitled"
-  );
-}

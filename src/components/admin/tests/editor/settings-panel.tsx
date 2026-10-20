@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { Plus, Trash2, RefreshCw, X } from "lucide-react";
 import { cn } from "@/lib/cn";
 import type { TestSettings } from "@/lib/admin/tests";
+import { slugify } from "@/lib/slug";
 import { Field, Group, MarkdownField, NumberInput, Segmented, ToggleRow, fromLocalInput, toLocalInput } from "./fields";
 
 export type Person = { id: string; name: string; username: string };
@@ -12,6 +13,12 @@ export type GroupOption = { id: string; name: string };
 function code(len = 6) {
   const a = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   return Array.from(crypto.getRandomValues(new Uint8Array(len)), (b) => a[b % a.length]).join("");
+}
+
+/** While a test is a draft, its link follows the title unless someone typed their own link. */
+function titlePatch(s: TestSettings, title: string): Partial<TestSettings> {
+  const auto = s.status === "draft" && (!s.slug || new RegExp(`^${slugify(s.title)}(-\\d+)?$`).test(s.slug));
+  return auto ? { title, slug: slugify(title) } : { title };
 }
 
 export function SettingsPanel({
@@ -33,7 +40,7 @@ export function SettingsPanel({
       <Group title="Basics">
         <div className="grid gap-4 sm:grid-cols-[1fr_180px]">
           <Field label="Title">
-            <input value={s.title} onChange={(e) => set({ title: e.target.value })} className="field" />
+            <input value={s.title} onChange={(e) => set(titlePatch(s, e.target.value))} className="field" />
           </Field>
           <Field label="Label" hint="Shown on the card, e.g. Practice">
             <input value={s.tag ?? ""} onChange={(e) => set({ tag: e.target.value })} className="field" />
