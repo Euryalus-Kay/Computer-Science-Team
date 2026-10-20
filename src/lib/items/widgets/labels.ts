@@ -18,5 +18,7 @@ export const WIDGET_LABELS: Record<string, string> = {
   "tock-reverse": "Tock: find the input",
   "tock-write": "Tock: write a program",
   terminal: "Terminal",
+  door: "Terminal: open the door",
   lock: "Code lock",
+  glyph: "Glyph: strange language",
 };

@@ -46,6 +46,7 @@ export type RunnerProps = {
 function isAnswered(item: RunnerItem, response: unknown, state: unknown, status?: string): boolean {
   if (item.type === "code") return status === "graded";
   if (item.widget === "lock") return Boolean((state as { guesses?: unknown[] })?.guesses?.length);
+  if (item.widget === "door") return Boolean((state as { history?: unknown[] })?.history?.length);
   return hasContent(response, item.widget);
 }
 

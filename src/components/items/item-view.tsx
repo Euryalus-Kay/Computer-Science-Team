@@ -9,6 +9,8 @@ import { RobotTrace, RobotBuild, Rail, Scale, Lights, Network } from "./widgets/
 import { TockTrace, TockReverse, TockWrite } from "./widgets/tock";
 import { Terminal } from "./widgets/terminal";
 import { Lock } from "./widgets/lock";
+import { Glyph } from "./widgets/glyph";
+import { Door } from "./widgets/door";
 
 const WIDGET_VIEWS: Record<string, ComponentType<ItemProps>> = {
   figures: Figures,
@@ -30,6 +32,8 @@ const WIDGET_VIEWS: Record<string, ComponentType<ItemProps>> = {
   "tock-write": TockWrite,
   terminal: Terminal,
   lock: Lock,
+  glyph: Glyph,
+  door: Door,
 };
 
 const GENERIC: Record<string, ComponentType<ItemProps>> = {

@@ -13,6 +13,16 @@ const LETTERS = "ABCDEFGHIJKL";
 const arr = (v: unknown): string[] => (Array.isArray(v) ? v.map((x) => String(x ?? "")) : []);
 
 function Choices({ config, set, multi }: FormProps & { multi?: boolean }) {
+  const versions = Array.isArray(config.variants) ? (config.variants as Cfg[]).filter((v) => Array.isArray(v.options)) : [];
+  if (versions.length && !arr(config.options).length) {
+    return (
+      <Field label="Choices">
+        <div className="rounded-md border border-line bg-panel-2 px-3 py-2.5 text-sm text-ink-2">
+          Each student gets one of {versions.length} versions, each with its own choices. Edit them under Advanced.
+        </div>
+      </Field>
+    );
+  }
   const options = arr(config.options);
   const answers = multi ? ((config.answers as number[]) ?? []) : [config.answer as number];
   const toggle = (i: number) => {

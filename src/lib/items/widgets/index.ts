@@ -5,6 +5,8 @@ import { robotTrace, robotBuild, rail, scale, lights, network } from "./machines
 import { tockTrace, tockReverse, tockWrite } from "./tock";
 import { terminal } from "./terminal";
 import { lock } from "./lock";
+import { glyph } from "./glyph";
+import { door } from "./door";
 
 export const WIDGETS: Record<string, WidgetModule> = {
   figures,
@@ -26,6 +28,8 @@ export const WIDGETS: Record<string, WidgetModule> = {
   "tock-write": tockWrite,
   terminal,
   lock,
+  glyph,
+  door,
 };
 
 export { WIDGET_LABELS } from "./labels";

@@ -31,6 +31,8 @@ import {
 } from "@/lib/items/widgets/machines";
 import { runCommand, type Shell, type TerminalEnv } from "@/lib/items/widgets/terminal";
 import { runTock } from "@/lib/tock";
+import { runGlyph } from "@/lib/items/widgets/glyph";
+import { doorStep, type DoorState } from "@/lib/items/widgets/door";
 
 /* ------------------------------------------------------------------ setup */
 
@@ -179,6 +181,12 @@ const CHECKED_TITLES = [
   "Lights",
   "Tock: write it",
   "Explain a strategy",
+  "Ten rounds",
+  "Poisoned bottle",
+  "Neighbor swaps",
+  "Counting calls",
+  "Glyph",
+  "Open the door",
 ];
 
 describe("intro test coverage", () => {
@@ -1172,5 +1180,150 @@ describe("Practice Round 1 (generic question types)", () => {
       pub.options.forEach((_, c) => expect(frac(circulate, s, { choice: c })).toBe(c === key.answer ? 1 : 0));
       expectFractions(circulate, s, { none: null, missing: {} }, 0);
     }
+  });
+});
+
+/* ------------------------------------------------------------- quick fire */
+
+describe("Quick fire multiple choice", () => {
+  type McqPub = { options: string[] };
+  type McqKey = { answer: number };
+  /** The right answer for each question, worked out from the version's numbers. */
+  const truth: Record<string, (vars: Record<string, string | number>) => string> = {
+    "Ten rounds": (v) => {
+      let x = Number(v.start);
+      for (let i = 0; i < 10; i++) x = 2 * x - 1;
+      return String(x);
+    },
+    "Poisoned bottle": (v) => {
+      const n = Number(String(v.n).replace(/,/g, ""));
+      let k = 0;
+      while (2 ** k < n) k++;
+      return String(k);
+    },
+    "Neighbor swaps": (v) => {
+      const xs = String(v.list).split(" ").map(Number);
+      let inv = 0;
+      for (let i = 0; i < xs.length; i++) for (let j = i + 1; j < xs.length; j++) if (xs[i] > xs[j]) inv++;
+      return String(inv);
+    },
+    "Counting calls": (v) => {
+      const calls = (n: number): number => (n < 2 ? 1 : 1 + calls(n - 1) + calls(n - 2));
+      return String(calls(Number(v.n)));
+    },
+  };
+  for (const title of Object.keys(truth)) {
+    it(`${title}: every version keys the right answer, listed once, and only it scores`, () => {
+      const row = intro(title);
+      for (const s of SEEDS.slice(0, 120)) {
+        const g = gen<McqPub, McqKey>(row, s);
+        const want = truth[title](g.vars ?? {});
+        expect(g.pub.options[g.key.answer], `${title} seed ${s}`).toBe(want);
+        expect(g.pub.options.filter((o) => o === want).length).toBe(1);
+        expect(fillVars(row.prompt, g.vars)).not.toMatch(/\{\{/);
+        for (let i = 0; i < g.pub.options.length; i++) expect(frac(row, s, { choice: i })).toBe(i === g.key.answer ? 1 : 0);
+      }
+    });
+  }
+});
+
+/* ------------------------------------------------------------------ glyph */
+
+describe("Glyph", () => {
+  const row = intro("Glyph");
+  type GlyphPub = { code: string };
+  type GlyphKey = { output: number[] };
+
+  it("the key is what the program prints, and the program runs cleanly", () => {
+    for (const s of SEEDS) {
+      const { pub, key } = gen<GlyphPub, GlyphKey>(row, s);
+      const r = runGlyph(pub.code);
+      expect(r.error, `seed ${s}: ${pub.code}`).toBeUndefined();
+      expect(r.out).toEqual(key.output);
+    }
+  });
+
+  it("the manual's examples print what the manual says", () => {
+    for (const [code, out] of [["2 3 + .", [5]], ["4 : * .", [16]], ["1 2 ~ - .", [1]], ["1 3( 2 * ) .", [8]], ["7 2 - .", [5]], ["1 2 3 ^ . . .", [1, 3, 2]]] as const)
+      expect(runGlyph(code).out).toEqual(out);
+  });
+
+  it("accepts every reasonable way of writing the printed numbers, and nothing else", () => {
+    for (const s of SEEDS) {
+      const { key } = gen<GlyphPub, GlyphKey>(row, s);
+      expectFractions(row, s, wrapForms(listForms(key.output), "text"), 1);
+      expectFractions(row, s, { blank: { text: " " }, none: null, "off by one": { text: [...key.output.slice(0, -1), key.output[key.output.length - 1] + 1].join(" ") } }, 0);
+    }
+  });
+});
+
+/* -------------------------------------------------------------- the door */
+
+describe("Open the door", () => {
+  const row = intro("Open the door");
+  type DoorKey = Parameters<typeof doorStep>[0];
+  const play = (key: DoorKey, cmds: string[], now = 1_000_000) => {
+    let state: DoorState | null = null;
+    const outs: string[] = [];
+    for (const c of cmds) {
+      const r = doorStep(key, state, c, now);
+      state = r.state;
+      outs.push(r.reply.out);
+    }
+    return { state: state!, outs };
+  };
+  /** Works out the address and code the way a student would: only from what the commands print. */
+  const solve = (key: DoorKey) => {
+    const read = play(key, ["cat /etc/hosts", "cat /etc/door.conf", "date"]).outs;
+    const hosts = read[0].split("\n").filter((l) => /^10\./.test(l)).map((l) => ({ ip: l.split(/\s+/)[0], name: l.split(/\s+/)[1] }));
+    const net = read[1].match(/allow\s+(\d+\.\d+\.\d+)\.0\/24/)![1];
+    const cams = hosts.filter((h) => h.name.startsWith("cam-") && h.ip.startsWith(net + "."));
+    const hour = Number(read[2].match(/ (\d\d):\d\d:\d\d /)![1]);
+    const code = /times the number of cameras/.test(read[1]) ? hour * cams.length : cams.reduce((t, h) => t + Number(h.ip.split(".")[3]), 0);
+    const used = new Set(hosts.map((h) => h.ip));
+    let free = 50;
+    while (used.has(`${net}.${free}`)) free++;
+    return { addr: `${net}.${free}`, code: String(code), net };
+  };
+
+  it("can be opened using only what the commands show, for full credit", () => {
+    for (const s of SEEDS) {
+      const { key } = gen<unknown, DoorKey>(row, s);
+      const { addr, code } = solve(key);
+      expect(code, `seed ${s}`).toBe(key.code);
+      const { state, outs } = play(key, ["connect door", `ip set ${addr}`, "connect door", `unlock ${code}`]);
+      expect(outs[0]).toMatch(/refused/);
+      expect(state.opened, `seed ${s}: ${outs.join(" | ")}`).toBe(true);
+      expect(frac(row, s, null, state)).toBe(1);
+    }
+  });
+
+  it("refuses taken and outside addresses, early unlocks, and guessing", () => {
+    for (const s of SEEDS.slice(0, 100)) {
+      const { key } = gen<unknown, DoorKey>(row, s);
+      const { addr, net } = solve(key);
+      const cam = key.hosts.find((h) => h.ip.startsWith(net + ".") && h.name.startsWith("cam-"))!;
+      expect(play(key, [`ip set ${cam.ip}`]).outs[0]).toMatch(/already used/);
+      expect(play(key, ["ip set 192.168.1.5"]).outs[0]).toMatch(/10\.0\.x\.x/);
+      expect(play(key, ["unlock 1234"]).state.opened).toBe(false);
+      // Three wrong codes lock it, so even the right code fails until the lock runs out.
+      const wrong = String(Number(key.code) + 1);
+      const locked = play(key, [`ip set ${addr}`, "connect door", `unlock ${wrong}`, `unlock ${wrong}`, `unlock ${wrong}`, `unlock ${key.code}`]);
+      expect(locked.state.opened).toBe(false);
+      expect(locked.outs[5]).toMatch(/locked/);
+      expect(doorStep(key, locked.state, `unlock ${key.code}`, 1_000_000 + 31_000).state.opened).toBe(true);
+      // Getting through to the controller is worth part of it.
+      expect(frac(row, s, null, play(key, [`ip set ${addr}`, "connect door"]).state)).toBe(0.3);
+      expect(frac(row, s, null, null)).toBe(0);
+    }
+  });
+
+  it("the interact path the site uses works the same way", () => {
+    const s = SEEDS[3];
+    const { key } = gen<unknown, DoorKey>(row, s);
+    const { addr, code } = solve(key);
+    let state: unknown = null;
+    for (const cmd of [`ip set ${addr}`, "connect door", `unlock ${code}`]) state = interactItem(row, s, state, { cmd })!.state;
+    expect((state as DoorState).opened).toBe(true);
   });
 });

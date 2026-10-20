@@ -53,7 +53,7 @@ export async function seedTests(adminId: string, problemIds: Record<string, stri
       slug: "intro-logic",
       title: "Intro Logic Test",
       description:
-        "30 minutes, 24 questions. Nobody is expected to finish, so skip anything that stalls you and come back if there's time. Later questions are worth more.\n\nEveryone gets different numbers, so comparing answers won't help.",
+        "30 minutes, 30 questions. Nobody is expected to finish, so skip anything that stalls you and come back if there's time. Later questions are worth more.\n\nEveryone gets different numbers, so comparing answers won't help.",
       status: "published",
       durationMin: 30,
       startMode: "live",

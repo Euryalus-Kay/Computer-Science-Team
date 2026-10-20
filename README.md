@@ -43,7 +43,7 @@ For a contest with many people submitting code at once, run your own Judge0 or P
 4. Press **Start** on the **Monitor** tab. Watch progress, time left and integrity flags live. Pause, add time, give one student extra time, or end it.
 5. The **Results** tab shows scores, how far everyone got, and a strip of right and wrong answers per person. Select people and add them to a group, export a CSV, run **Check for copying**, and grade written answers.
 
-The intro test (**Intro Logic Test**) is 30 minutes of logic puzzles that get harder as they go, with a made-up language (Tock), a fake terminal, circuits, a robot, a code lock and more. Nobody is expected to finish; where people end up and how many they get right separates experience levels without saying so.
+The intro test (**Intro Logic Test**) is 30 minutes and 30 questions of logic puzzles that get harder as they go: quick multiple-choice riddles, two made-up languages (Tock, and Glyph with its one-page manual), a fake terminal with a door to break into, circuits, a robot, a code lock and more. It runs in a normal browser with full screen and the integrity checks on. Nobody is expected to finish; where people end up and how many they get right separates experience levels without saying so.
 
 ## The Lab CS app
 

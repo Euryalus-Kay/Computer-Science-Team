@@ -73,16 +73,17 @@ function checkItem(it: ItemInput, n: number): string | null {
   const c = it.config as Record<string, unknown>;
   const variants = Array.isArray(c.variants) ? (c.variants as Record<string, unknown>[]) : null;
   const has = (k: string) => c[k] !== undefined || Boolean(variants?.length && variants.every((v) => v[k] !== undefined));
+  // Choices can also come from per-student versions, each with its own list.
+  const choices = (k: string) =>
+    ((c[k] as unknown[]) ?? []).length >= 2 || Boolean(variants?.length && variants.every((v) => Array.isArray(v[k]) && (v[k] as unknown[]).length >= 2));
   switch (it.type) {
     case "mcq": {
-      const opts = (c.options as unknown[]) ?? [];
-      if (opts.length < 2) return `${where}: add at least two choices.`;
+      if (!choices("options")) return `${where}: add at least two choices.`;
       if (!has("answer")) return `${where}: mark the correct choice.`;
       break;
     }
     case "multi": {
-      const opts = (c.options as unknown[]) ?? [];
-      if (opts.length < 2) return `${where}: add at least two choices.`;
+      if (!choices("options")) return `${where}: add at least two choices.`;
       if (!Array.isArray(c.answers) || !(c.answers as unknown[]).length) return `${where}: mark at least one correct choice.`;
       break;
     }

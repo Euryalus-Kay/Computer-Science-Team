@@ -56,7 +56,75 @@ export const INTRO_ITEMS: SeedItem[] = [
     config: W("stride"),
   },
   {
-    section: "Tock",
+    section: "Quick fire",
+    type: "mcq",
+    title: "Ten rounds",
+    prompt: "What does this print?\n\n```\nx = {{start}}\nrepeat 10 times:\n    x = 2 * x - 1\nprint x\n```",
+    points: 1,
+    config: {
+      options: [],
+      answer: 0,
+      variants: [
+        { vars: { start: 1 }, options: ["1", "1023", "1024", "2047", "513"], answer: 0 },
+        { vars: { start: 2 }, options: ["1025", "1024", "2049", "2047", "513"], answer: 0 },
+        { vars: { start: 3 }, options: ["2049", "2048", "3071", "1025", "4097"], answer: 0 },
+      ],
+    },
+  },
+  {
+    section: "Quick fire",
+    type: "mcq",
+    title: "Poisoned bottle",
+    prompt:
+      "A lab has {{n}} bottles and exactly one is poisoned. A test strip turns red if any drop on it came from the poisoned bottle. Every strip has to be prepared at the same time and is read once, an hour later. What is the fewest strips that always finds the poisoned bottle?",
+    points: 1,
+    config: {
+      options: [],
+      answer: 0,
+      variants: [
+        { vars: { n: "1,000" }, options: ["10", "11", "32", "100", "999"], answer: 0 },
+        { vars: { n: "500" }, options: ["9", "10", "23", "50", "499"], answer: 0 },
+        { vars: { n: "2,000" }, options: ["11", "12", "45", "200", "1,999"], answer: 0 },
+        { vars: { n: "100" }, options: ["7", "8", "10", "50", "99"], answer: 0 },
+      ],
+    },
+  },
+  {
+    section: "Quick fire",
+    type: "mcq",
+    title: "Neighbor swaps",
+    prompt: "You may only swap two numbers that sit next to each other. What is the fewest swaps that puts `{{list}}` in increasing order?",
+    points: 1,
+    config: {
+      options: [],
+      answer: 0,
+      variants: [
+        { vars: { list: "4 1 3 2" }, options: ["2", "3", "4", "5", "6"], answer: 2 },
+        { vars: { list: "3 1 4 2 5" }, options: ["2", "3", "4", "5", "6"], answer: 1 },
+        { vars: { list: "5 2 4 1 3" }, options: ["5", "6", "7", "8", "9"], answer: 2 },
+        { vars: { list: "2 4 1 3" }, options: ["2", "3", "4", "5", "6"], answer: 1 },
+      ],
+    },
+  },
+  {
+    section: "Quick fire",
+    type: "mcq",
+    title: "Counting calls",
+    prompt:
+      "```\nf(n):\n    if n < 2: return n\n    return f(n - 1) + f(n - 2)\n```\n\nHow many times is `f` called in all when you run `f({{n}})`? Count that first call too.",
+    points: 2,
+    config: {
+      options: [],
+      answer: 0,
+      variants: [
+        { vars: { n: 4 }, options: ["9", "5", "8", "10", "15"], answer: 0 },
+        { vars: { n: 5 }, options: ["15", "8", "9", "16", "25"], answer: 0 },
+        { vars: { n: 6 }, options: ["25", "13", "15", "26", "41"], answer: 0 },
+      ],
+    },
+  },
+  {
+    section: "Languages",
     type: "widget",
     title: "Tock: totals",
     prompt:
@@ -65,7 +133,7 @@ export const INTRO_ITEMS: SeedItem[] = [
     config: W("tock-trace", { kind: "range-sum" }),
   },
   {
-    section: "Tock",
+    section: "Languages",
     type: "widget",
     title: "Tock: positions",
     prompt: "What does this program print?",
@@ -73,12 +141,20 @@ export const INTRO_ITEMS: SeedItem[] = [
     config: W("tock-trace", { kind: "index" }),
   },
   {
-    section: "Tock",
+    section: "Languages",
     type: "widget",
     title: "Tock: pipes",
     prompt: "What does this program print? Write a list as `[5, 3, 1]` or `5 3 1`.",
     points: 2,
     config: W("tock-trace", { kind: "pipe" }),
+  },
+  {
+    section: "Languages",
+    type: "widget",
+    title: "Glyph",
+    prompt: "Glyph is another made-up language. Its whole manual is next to the program. What does the program print?",
+    points: 2,
+    config: W("glyph"),
   },
   {
     section: "Terminal",
@@ -95,6 +171,15 @@ export const INTRO_ITEMS: SeedItem[] = [
     prompt: "What is the door code? The notes in the guest home folder explain how it's made.",
     points: 2,
     config: W("terminal", { ask: "door-code", seedKey: "terminal" }),
+  },
+  {
+    section: "Terminal",
+    type: "widget",
+    title: "Open the door",
+    prompt:
+      "A different machine: you're `guest` on `lab-gate`. Open the lab door, which is run by a controller called `door`. Read each error carefully, because it tells you what to look at next.",
+    points: 3,
+    config: W("door"),
   },
   {
     section: "Machines",
