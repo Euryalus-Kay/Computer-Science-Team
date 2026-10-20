@@ -7,7 +7,7 @@ import { ToastProvider } from "@/components/ui/toast";
 
 export const metadata: Metadata = {
   title: { template: "%s · Lab CS", default: "Lab CS" },
-  description: "Practice, tests and problems for the Lab computer science team.",
+  description: "Practice, tests and problems for the UCLS Math & Computer Science Team.",
   icons: { icon: "/icon.svg" },
 };
 

@@ -10,6 +10,8 @@ import { postsForHome } from "@/lib/posts";
 import { getSettings } from "@/lib/settings";
 import { formatDate, relativeTime } from "@/lib/format";
 import { Page } from "@/components/ui/page";
+import { LabCrest } from "@/components/shell/lab-crest";
+import { TEAM_NAME } from "@/lib/brand";
 import { TestRow } from "@/components/tests/test-row";
 import { Difficulty } from "@/components/problems/difficulty";
 
@@ -32,9 +34,14 @@ export default async function Home() {
   const today = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", timeZone: settings.timezone });
 
   return (
-    <Page>
+    <>
+      <LabCrest className="pointer-events-none fixed right-[-3vw] bottom-[-4vw] z-0 w-[min(72vw,560px)] text-ink opacity-[0.05] select-none print:hidden" />
+      <Page className="relative z-[1]">
       <div className="mb-7 flex flex-wrap items-end justify-between gap-2">
-        <h1 className="text-2xl font-semibold tracking-[-0.015em]">Hi, {user.name.split(" ")[0]}</h1>
+        <div>
+          <h1 className="text-2xl font-semibold tracking-[-0.015em]">Hi, {user.name.split(" ")[0]}</h1>
+          <div className="mt-1 text-sm text-ink-3">{TEAM_NAME}</div>
+        </div>
         <div className="text-sm text-ink-3">{today}</div>
       </div>
 
@@ -144,5 +151,6 @@ export default async function Home() {
         </aside>
       </div>
     </Page>
+    </>
   );
 }
