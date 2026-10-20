@@ -8,6 +8,7 @@ import { answers, attempts, contests, problems, submissions, users } from "@/lib
 import { testStatus } from "@/lib/tests/status";
 import { getSettings } from "@/lib/settings";
 import { relativeTime } from "@/lib/format";
+import { VERDICT_LABEL } from "@/lib/runner";
 import { Page, PageHeader } from "@/components/ui/page";
 import { Badge } from "@/components/ui/badge";
 import { LinkButton } from "@/components/ui/button";
@@ -18,26 +19,28 @@ export default async function AdminOverview() {
   await requireAdmin();
   const d = await db();
   const week = new Date(Date.now() - 7 * 864e5);
-  const [[m], [subs], allTests, flagged, pending, recent, settings] = await Promise.all([
+  const toReview = and(eq(attempts.isPreview, false), eq(attempts.reviewed, false), sql`${attempts.integrity}->>'level' in ('medium','high')`);
+  const [[m], [subs], allTests, flagged, [flaggedTotal], pending, recent, settings] = await Promise.all([
     d
       .select({
         total: sql<number>`count(*) filter (where ${users.role} = 'member' and not ${users.disabled})::int`,
-        active: sql<number>`count(*) filter (where ${users.lastSeenAt} > ${week.toISOString()}::timestamptz)::int`,
+        active: sql<number>`count(*) filter (where ${users.role} = 'member' and not ${users.disabled} and ${users.lastSeenAt} > ${week.toISOString()}::timestamptz)::int`,
       })
       .from(users),
     d
       .select({ n: sql<number>`count(*)::int`, solved: sql<number>`count(distinct (${submissions.userId}, ${submissions.problemId})) filter (where ${submissions.verdict} = 'AC')::int` })
       .from(submissions)
-      .where(gt(submissions.createdAt, week)),
+      .where(and(gt(submissions.createdAt, week), sql`${submissions.attemptId} is null`)),
     d.select().from(contests).where(sql`${contests.status} <> 'archived'`).orderBy(desc(contests.updatedAt)),
     d
       .select({ id: attempts.id, contestId: attempts.contestId, title: contests.title, name: users.name, integrity: attempts.integrity })
       .from(attempts)
       .innerJoin(contests, eq(contests.id, attempts.contestId))
       .innerJoin(users, eq(users.id, attempts.userId))
-      .where(and(eq(attempts.isPreview, false), eq(attempts.reviewed, false), sql`${attempts.integrity}->>'level' in ('medium','high')`))
+      .where(toReview)
       .orderBy(desc(attempts.startedAt))
       .limit(8),
+    d.select({ n: sql<number>`count(*)::int` }).from(attempts).where(toReview),
     d
       .select({ contestId: attempts.contestId, title: contests.title, n: sql<number>`count(*)::int` })
       .from(answers)
@@ -72,7 +75,7 @@ export default async function AdminOverview() {
     { label: "Members", value: m.total, sub: `${m.active} active this week` },
     { label: "Tests running", value: running.filter((c) => testStatus(c).live || testStatus(c).label === "Open").length, sub: `${allTests.length} in total` },
     { label: "Practice submissions", value: subs.n, sub: `${subs.solved} solves this week` },
-    { label: "To review", value: flagged.length, sub: pending.reduce((t, p) => t + p.n, 0) ? `${pending.reduce((t, p) => t + p.n, 0)} answers to grade` : "Nothing to grade" },
+    { label: "To review", value: flaggedTotal.n, sub: pending.reduce((t, p) => t + p.n, 0) ? `${pending.reduce((t, p) => t + p.n, 0)} answers to grade` : "Nothing to grade" },
   ];
 
   return (
@@ -179,7 +182,7 @@ export default async function AdminOverview() {
                     </Link>
                   </span>
                   <span className="flex shrink-0 items-center gap-3">
-                    <Badge tone={r.verdict === "AC" ? "green" : "neutral"}>{r.verdict === "AC" ? "Accepted" : (r.verdict ?? "Running")}</Badge>
+                    <Badge tone={r.verdict === "AC" ? "green" : "neutral"}>{r.verdict ? (VERDICT_LABEL[r.verdict as keyof typeof VERDICT_LABEL] ?? r.verdict) : "Running"}</Badge>
                     <span className="w-16 text-right text-xs text-ink-4">{relativeTime(r.at)}</span>
                   </span>
                 </div>
