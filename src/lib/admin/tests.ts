@@ -516,8 +516,17 @@ export async function regradeTest(contestId: string): Promise<Result<{ attempts:
     for (const it of items) {
       const prev = ans.get(it.id);
       if (it.type === "code") {
-        if (a.status === "active" && !prev) continue;
-        const f = codes.get(it.id) ?? 0;
+        const f = codes.get(it.id);
+        if (f === undefined) {
+          // No code submitted: unanswered, even if an earlier grading stored a 0 for it.
+          if (prev?.status === "graded" && prev.gradedBy === "auto") {
+            await d
+              .update(answers)
+              .set({ status: "empty", score: null, correct: null, gradedBy: null })
+              .where(and(eq(answers.attemptId, a.id), eq(answers.itemId, it.id)));
+          }
+          continue;
+        }
         await d
           .insert(answers)
           .values({ attemptId: a.id, itemId: it.id, maxScore: it.points, score: f * it.points, status: "graded", correct: f === 1, gradedBy: "auto" })

@@ -167,7 +167,7 @@ export async function getAnswers(attemptId: string): Promise<AnswerRow[]> {
   return d.select().from(answers).where(eq(answers.attemptId, attemptId));
 }
 
-/** Best code score for each code item in an attempt, as a 0..1 fraction. */
+/** Best code score for each code item the attempt submitted code for, as a 0..1 fraction. Items with no submissions are left out. */
 export async function codeFractions(attemptId: string, items: ItemRow[]): Promise<Map<string, number>> {
   const codeItems = items.filter((i) => i.type === "code");
   const out = new Map<string, number>();
@@ -178,9 +178,11 @@ export async function codeFractions(attemptId: string, items: ItemRow[]): Promis
     .from(submissions)
     .where(and(eq(submissions.attemptId, attemptId), inArray(submissions.itemId, codeItems.map((i) => i.id))));
   for (const it of codeItems) {
+    const mine = subs.filter((x) => x.itemId === it.id);
+    if (!mine.length) continue;
     const partial = (it.config as { partial?: boolean }).partial !== false;
     let best = 0;
-    for (const s of subs.filter((x) => x.itemId === it.id)) {
+    for (const s of mine) {
       const f = s.verdict === "AC" ? 1 : partial && s.total ? s.passed / s.total : 0;
       best = Math.max(best, f);
     }
@@ -213,7 +215,9 @@ export async function finalizeAttempt(attemptId: string, status: "submitted" | "
   for (const it of items) {
     const a = existing.get(it.id);
     if (it.type === "code") {
-      const f = codes.get(it.id) ?? 0;
+      // A code question only counts as answered once they submitted code for it.
+      const f = codes.get(it.id);
+      if (f === undefined) continue;
       await upsertAnswer(attemptId, it, {
         score: f * it.points,
         maxScore: it.points,
