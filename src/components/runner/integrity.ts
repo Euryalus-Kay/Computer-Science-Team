@@ -61,6 +61,9 @@ export function useIntegrity(opts: IntegrityOptions) {
     let hiddenAt: number | null = null;
     let blurAt: number | null = null;
     let lastCopy = "";
+    // In the Lab CS app the app itself reports leaving, screens and the window, so the page
+    // doesn't report them again (twice, or as a resize while kiosk mode takes over the screen).
+    const inApp = Boolean(window.labcsDesktop);
 
     const onVisibility = () => {
       if (document.hidden) {
@@ -80,7 +83,7 @@ export function useIntegrity(opts: IntegrityOptions) {
       }
     };
     const onBlur = () => {
-      if (document.hidden) return;
+      if (document.hidden || inApp) return;
       blurAt = Date.now();
       push("blur");
     };
@@ -134,6 +137,7 @@ export function useIntegrity(opts: IntegrityOptions) {
     let resizeTimer: ReturnType<typeof setTimeout> | null = null;
     let wasSmall = false;
     const onResize = () => {
+      if (inApp) return;
       if (resizeTimer) clearTimeout(resizeTimer);
       resizeTimer = setTimeout(() => {
         const small = innerWidth < screen.availWidth * 0.66 && screen.availWidth > 900;
@@ -165,8 +169,8 @@ export function useIntegrity(opts: IntegrityOptions) {
       addEventListener?: (t: string, f: () => void) => void;
       removeEventListener?: (t: string, f: () => void) => void;
     };
-    if (scr.isExtended) push("multi_screen", { extended: true });
-    const onScreen = () => scr.isExtended && push("multi_screen", { extended: true });
+    if (scr.isExtended && !inApp) push("multi_screen", { extended: true });
+    const onScreen = () => scr.isExtended && !inApp && push("multi_screen", { extended: true });
     scr.addEventListener?.("change", onScreen);
 
     // Idle: no input for 3 minutes while visible.
