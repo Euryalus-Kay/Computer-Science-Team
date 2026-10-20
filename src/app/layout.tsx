@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { cookies } from "next/headers";
+import Script from "next/script";
 import "./globals.css";
 import { themeScript, THEME_COOKIE } from "@/components/shell/theme";
 import { ToastProvider } from "@/components/ui/toast";
@@ -23,8 +24,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang="en" data-theme={explicit ?? "light"} suppressHydrationWarning>
       <head>
-        {/* eslint-disable-next-line react/no-danger */}
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        <Script id="theme" strategy="beforeInteractive">
+          {themeScript}
+        </Script>
       </head>
       <body>
         <ToastProvider>{children}</ToastProvider>

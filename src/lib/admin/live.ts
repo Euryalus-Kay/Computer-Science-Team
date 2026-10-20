@@ -162,7 +162,8 @@ export async function liveSnapshot(c: ContestRow, opts: { previews?: boolean; fe
     const s = stats.get(a.id);
     const done = a.status !== "active";
     // Finished attempts use the stored summary, which also has cross-attempt flags.
-    const flags = done && a.integrity ? a.integrity.flags : s ? flagsFromStats(s.stats, s.types) : [];
+    const order = { high: 0, medium: 1, low: 2 };
+    const flags = (done && a.integrity ? a.integrity.flags : s ? flagsFromStats(s.stats, s.types) : []).slice().sort((x, y) => order[x.severity] - order[y.severity]);
     const { risk, level } = done && a.integrity ? a.integrity : riskOf(flags);
     const cur = a.lastItemId ? a.order.indexOf(a.lastItemId) : -1;
     return {

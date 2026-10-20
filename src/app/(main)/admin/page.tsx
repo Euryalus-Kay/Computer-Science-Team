@@ -22,7 +22,7 @@ export default async function AdminOverview() {
     d
       .select({
         total: sql<number>`count(*) filter (where ${users.role} = 'member' and not ${users.disabled})::int`,
-        active: sql<number>`count(*) filter (where ${users.lastSeenAt} > ${week})::int`,
+        active: sql<number>`count(*) filter (where ${users.lastSeenAt} > ${week.toISOString()}::timestamptz)::int`,
       })
       .from(users),
     d

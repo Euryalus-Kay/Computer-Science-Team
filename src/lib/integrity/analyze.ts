@@ -152,6 +152,9 @@ export async function summarizeAttempt(attemptId: string, cross: Flag[] | null =
     });
   }
   flags.push(...(cross ?? (attempt.integrity?.flags ?? []).filter((f) => f.code === "copied-version" || f.code === "fast")));
+  // Most serious first, so lists can show just the top one.
+  const order = { high: 0, medium: 1, low: 2 };
+  flags.sort((a, b) => order[a.severity] - order[b.severity]);
   const summary: IntegritySummary = { ...riskOf(flags), flags, stats, computedAt: new Date().toISOString() };
   await d.update(attempts).set({ integrity: summary }).where(eq(attempts.id, attemptId));
   return summary;
