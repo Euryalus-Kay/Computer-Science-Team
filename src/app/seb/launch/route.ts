@@ -20,6 +20,8 @@ export async function GET(req: Request) {
     return htmlPage("Open in Safe Exam Browser", "<h1>Open this in Safe Exam Browser</h1><p>This page only works inside Safe Exam Browser. Go back to the test page and choose Open in Safe Exam Browser.</p>", 403);
   }
   if (!(await consumeLaunchToken(token))) return htmlPage("Link used", "<h1>This link was already used</h1><p>Start again from the website.</p>", 410);
-  await createSession(row.userId, "seb", { sebConfigKey: cfg.configKey });
+  // Requests are held to the key only when SEB proved it at launch; otherwise a key
+  // mismatch would lock a real SEB out of its own test.
+  await createSession(row.userId, "seb", verified ? { sebConfigKey: cfg.configKey } : {});
   return Response.redirect(`${origin}${row.target}${verified ? "" : "?seb=unverified"}`, 303);
 }

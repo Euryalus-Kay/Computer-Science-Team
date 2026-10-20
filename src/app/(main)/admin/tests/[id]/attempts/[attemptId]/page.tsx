@@ -90,6 +90,7 @@ export default async function AttemptPage(props: PageProps<"/admin/tests/[id]/at
         submittedAt: attempt.submittedAt?.getTime() ?? null,
         remainingMs: attempt.status === "active" ? remainingMs(contest, attempt) : null,
         reached: attempt.frontier,
+        endedOn: attempt.lastItemId && ordered.findIndex((it) => it.id === attempt.lastItemId) >= 0 ? ordered.findIndex((it) => it.id === attempt.lastItemId) + 1 : null,
         client: attempt.client ?? { kind: "web" },
         reviewed: attempt.reviewed,
         aiReview: attempt.aiReview ?? null,

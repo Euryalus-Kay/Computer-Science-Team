@@ -20,6 +20,8 @@ export type ResultRow = {
   usedMs: number;
   answered: number;
   reached: number;
+  /** The question they were on when they submitted or time ran out, in their order. */
+  endedOn: number | null;
   cells: Cell[];
   itemScores: (number | null)[];
   sections: { name: string; score: number; max: number }[];
@@ -48,7 +50,7 @@ export type Results = {
   items: { id: string; title: string; section: string | null; points: number }[];
   rows: ResultRow[];
   questions: QuestionStat[];
-  summary: { count: number; mean: number; median: number; max: number; maxScore: number; reached: number };
+  summary: { count: number; mean: number; median: number; max: number; maxScore: number; answered: number };
 };
 
 function cellOf(item: ItemRow, a: typeof answers.$inferSelect | undefined): Cell {
@@ -114,6 +116,7 @@ export async function loadResults(c: ContestRow, opts: { previews?: boolean } = 
       usedMs: (a.submittedAt?.getTime() ?? now) - a.startedAt.getTime(),
       answered,
       reached: Math.max(reached, a.frontier),
+      endedOn: a.lastItemId && order.findIndex((it) => it.id === a.lastItemId) >= 0 ? order.findIndex((it) => it.id === a.lastItemId) + 1 : null,
       cells,
       itemScores: items.map((it) => mine.get(it.id)?.score ?? null),
       sections,
@@ -158,7 +161,7 @@ export async function loadResults(c: ContestRow, opts: { previews?: boolean } = 
       median: scores.length ? (scores.length % 2 ? scores[(scores.length - 1) / 2] : (scores[scores.length / 2 - 1] + scores[scores.length / 2]) / 2) : 0,
       max: scores.length ? scores[scores.length - 1] : 0,
       maxScore: total,
-      reached: done.length ? done.reduce((t, r) => t + r.reached, 0) / done.length : 0,
+      answered: done.length ? done.reduce((t, r) => t + r.answered, 0) / done.length : 0,
     },
   };
 }

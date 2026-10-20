@@ -24,7 +24,8 @@ export async function attemptCtx(req: Request, attemptId: string): Promise<Attem
     const lock = lockdownOk(contest, session, false);
     if (!lock.ok) return json({ error: "This test only runs in lockdown mode.", need: lock.need }, 403);
     const fromDesktop = session.kind === "desktop" && !desktopInfo(req.headers).ok;
-    const fromSeb = session.kind === "seb" && !sebInfo(req.headers, publicUrl(req), contest.integrity?.sebConfigKey).ok;
+    const sebKey = session.meta?.sebConfigKey ?? contest.integrity?.sebConfigKey;
+    const fromSeb = session.kind === "seb" && !sebInfo(req.headers, publicUrl(req), sebKey).ok;
     if (fromDesktop || fromSeb) {
       const d = await db();
       await d.insert(integrityEvents).values({

@@ -585,7 +585,6 @@ function Row({
       <td className="min-w-[140px]">
         <div className="num mb-1 text-xs text-ink-2">
           {r.answered} / {questions} answered
-          {r.frontier > 0 && <span className="text-ink-4"> · reached {r.frontier}</span>}
         </div>
         <Progress value={r.answered} max={questions} tone={r.status === "active" ? "accent" : "ink"} />
       </td>

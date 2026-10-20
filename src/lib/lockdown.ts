@@ -23,17 +23,20 @@ export function desktopInfo(headers: Headers): { ok: boolean; version: string | 
   return { ok: a.length === b.length && timingSafeEqual(a, b), version };
 }
 
-/** Safe Exam Browser adds these headers to every request it makes. */
+/**
+ * Safe Exam Browser adds these headers to the requests it makes. When we know the
+ * configuration's key, a config-key header that is present has to match it.
+ */
 export function sebInfo(headers: Headers, url: string, configKey?: string | null): { ok: boolean; verified: boolean } {
   const ua = headers.get("user-agent") ?? "";
   const configHash = headers.get("x-safeexambrowser-configkeyhash");
   const requestHash = headers.get("x-safeexambrowser-requesthash");
   const looksLikeSeb = /\bSEB\//.test(ua) || Boolean(configHash || requestHash);
   if (!looksLikeSeb) return { ok: false, verified: false };
-  if (!configKey) return { ok: true, verified: false };
+  if (!configKey || !configHash) return { ok: true, verified: false };
   const clean = url.split("#")[0];
   const expected = createHash("sha256").update(clean + configKey).digest("hex");
-  return { ok: configHash?.toLowerCase() === expected, verified: true };
+  return { ok: configHash.toLowerCase() === expected, verified: true };
 }
 
 /** Rebuilds the public URL of a request behind a proxy (Vercel sets x-forwarded-*). */

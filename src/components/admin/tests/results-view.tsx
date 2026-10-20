@@ -15,7 +15,7 @@ import { gradeAllPending, runIntegrityAnalysis } from "@/lib/admin/tests";
 import { createGroup, setGroupMembership } from "@/lib/admin/members";
 import { LevelPill, Progress } from "./bits";
 
-type SortKey = "rank" | "name" | "score" | "reached" | "time" | "risk";
+type SortKey = "rank" | "name" | "score" | "answered" | "ended" | "time" | "risk";
 
 const CELL: Record<Cell, string> = {
   right: "bg-accent",
@@ -66,7 +66,8 @@ export function ResultsView({
       rank: (a, b) => ranked.get(a.attemptId)! - ranked.get(b.attemptId)!,
       name: (a, b) => a.name.localeCompare(b.name),
       score: (a, b) => b.score - a.score,
-      reached: (a, b) => b.reached - a.reached,
+      answered: (a, b) => b.answered - a.answered,
+      ended: (a, b) => (b.endedOn ?? 0) - (a.endedOn ?? 0),
       time: (a, b) => a.usedMs - b.usedMs,
       risk: (a, b) => b.risk - a.risk,
     };
@@ -104,7 +105,7 @@ export function ResultsView({
           <Stat label="Submitted" value={String(s.count)} />
           <Stat label="Average" value={pts(Math.round(s.mean * 10) / 10)} sub={`of ${pts(s.maxScore)}`} />
           <Stat label="Median" value={pts(s.median)} />
-          <Stat label="Questions reached" value={s.reached.toFixed(1)} sub={`of ${data.items.length}`} />
+          <Stat label="Answered" value={s.answered.toFixed(1)} sub={`of ${data.items.length}`} />
         </div>
         <Histogram rows={data.rows.filter((r) => r.status !== "active")} max={s.maxScore} />
       </div>
@@ -180,7 +181,8 @@ export function ResultsView({
                 {head("name", "Name")}
                 {head("score", "Score", "text-right")}
                 <th>Questions</th>
-                {head("reached", "Reached", "text-right")}
+                {head("answered", "Answered", "text-right")}
+                {head("ended", "Ended on", "text-right")}
                 {head("time", "Time", "text-right")}
                 {head("risk", "Integrity")}
               </tr>
@@ -227,9 +229,10 @@ export function ResultsView({
                     </div>
                   </td>
                   <td className="num text-right text-ink-2">
-                    {r.reached}
+                    {r.answered}
                     <span className="text-ink-4"> / {data.items.length}</span>
                   </td>
+                  <td className="num text-right text-ink-2">{r.status === "active" ? <span className="text-ink-4">–</span> : r.endedOn ? `Q${r.endedOn}` : "–"}</td>
                   <td className="num text-right text-ink-2">{minutes(r.usedMs)} min</td>
                   <td>
                     <div className="flex items-center gap-1.5">

@@ -8,21 +8,44 @@ const WASM = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.1.1/wasm";
 const FACE_MODEL = "https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite";
 const OBJECT_MODEL = "https://storage.googleapis.com/mediapipe-models/object_detector/efficientdet_lite0/int8/1/efficientdet_lite0.tflite";
 
-type Status = "starting" | "on" | "denied" | "error";
+type Status = "ask" | "starting" | "on" | "denied" | "declined" | "error";
 
 /**
  * On-device camera check. Face and phone detection run in the browser with
  * MediaPipe; no image or video ever leaves the computer. Only alerts are reported.
  */
-export function CameraMonitor({ onEvent }: { onEvent: (type: string, data?: Record<string, unknown>) => void }) {
+export function CameraMonitor({ onEvent, attemptId }: { onEvent: (type: string, data?: Record<string, unknown>) => void; attemptId: string }) {
   const video = useRef<HTMLVideoElement>(null);
-  const [status, setStatus] = useState<Status>("starting");
+  const [status, setStatus] = useState<Status>("ask");
+  const [run, setRun] = useState(0);
   const [face, setFace] = useState<"ok" | "none" | "many" | "away">("ok");
   const [collapsed, setCollapsed] = useState(false);
   const cb = useRef(onEvent);
   cb.current = onEvent;
 
   useEffect(() => {
+    try {
+      if (sessionStorage.getItem(`attempt:${attemptId}:camera`) === "yes") {
+        setStatus("starting");
+        setRun((r) => r + 1);
+      }
+    } catch {}
+  }, [attemptId]);
+
+  const accept = () => {
+    try {
+      sessionStorage.setItem(`attempt:${attemptId}:camera`, "yes");
+    } catch {}
+    setStatus("starting");
+    setRun((r) => r + 1);
+  };
+  const decline = () => {
+    setStatus("declined");
+    cb.current("camera_denied", { declined: true });
+  };
+
+  useEffect(() => {
+    if (!run) return;
     let stream: MediaStream | null = null;
     let stopped = false;
     let timer: ReturnType<typeof setInterval> | null = null;
@@ -115,11 +138,35 @@ export function CameraMonitor({ onEvent }: { onEvent: (type: string, data?: Reco
       if (timer) clearInterval(timer);
       stream?.getTracks().forEach((t) => t.stop());
     };
-  }, []);
+  }, [run]);
+
+  if (status === "ask") {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(10,12,15,0.5)] p-6 backdrop-blur-sm">
+        <div className="animate-in w-full max-w-sm rounded-xl bg-panel p-6 shadow-pop">
+          <Video className="mb-3 size-6 text-ink-3" />
+          <h2 className="text-base font-semibold">Camera check</h2>
+          <p className="mt-2 text-sm text-ink-2">
+            This test checks that you&apos;re at your computer and alone. It runs on this computer only. No video or pictures are saved or sent. Only alerts like &quot;no face in view&quot; reach your coach.
+          </p>
+          <div className="mt-5 flex justify-end gap-2">
+            <button onClick={decline} className="h-8 rounded-md px-3 text-sm text-ink-3 hover:bg-panel-3 hover:text-ink">
+              Not now
+            </button>
+            <button onClick={accept} className="h-8 rounded-md bg-ink px-3 text-sm font-medium text-panel hover:bg-ink/85">
+              Turn on camera
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const label =
     status === "denied"
       ? "Camera blocked"
+      : status === "declined"
+        ? "Camera off"
       : status === "error"
         ? "Camera off"
         : status === "starting"
@@ -136,7 +183,7 @@ export function CameraMonitor({ onEvent }: { onEvent: (type: string, data?: Reco
     <div className="fixed right-4 bottom-4 z-40 w-[176px] overflow-hidden rounded-xl border border-line bg-panel shadow-pop">
       <div className="flex items-center justify-between gap-2 px-2.5 py-1.5">
         <span className="flex min-w-0 items-center gap-1.5 text-xs">
-          {status === "denied" || status === "error" ? <VideoOff className="size-3.5 text-red" /> : <Video className="size-3.5 text-ink-3" />}
+          {status === "denied" || status === "error" || status === "declined" ? <VideoOff className="size-3.5 text-red" /> : <Video className="size-3.5 text-ink-3" />}
           <span className={cn("size-1.5 shrink-0 rounded-full", ok ? "bg-accent" : status === "starting" ? "bg-ink-4" : "bg-amber")} />
           <span className="truncate">{label}</span>
         </span>
@@ -144,8 +191,14 @@ export function CameraMonitor({ onEvent }: { onEvent: (type: string, data?: Reco
           {collapsed ? <ChevronUp className="size-3.5" /> : <ChevronDown className="size-3.5" />}
         </button>
       </div>
-      <video ref={video} muted playsInline className={cn("w-full -scale-x-100 bg-black", collapsed ? "h-0" : "aspect-[4/3]")} />
-      {!collapsed && <div className="px-2.5 py-1.5 text-[10.5px] leading-tight text-ink-4">Video stays on this computer. Only alerts are saved.</div>}
+      {status === "declined" ? (
+        <button onClick={accept} className="w-full border-t border-line px-2.5 py-1.5 text-left text-xs font-medium text-ink hover:bg-panel-2">
+          Turn on camera
+        </button>
+      ) : (
+        <video ref={video} muted playsInline className={cn("w-full -scale-x-100 bg-black", collapsed ? "h-0" : "aspect-[4/3]")} />
+      )}
+      {!collapsed && status !== "declined" && <div className="px-2.5 py-1.5 text-[10.5px] leading-tight text-ink-4">Video stays on this computer. Only alerts are saved.</div>}
     </div>
   );
 }

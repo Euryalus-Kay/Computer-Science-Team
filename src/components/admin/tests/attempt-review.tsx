@@ -103,6 +103,7 @@ export function AttemptReview({
     submittedAt: number | null;
     remainingMs: number | null;
     reached: number;
+    endedOn: number | null;
     client: AttemptClient;
     reviewed: boolean;
     aiReview: AiReview | null;
@@ -147,7 +148,8 @@ export function AttemptReview({
             <span>Started {formatDateTime(attempt.startedAt, timezone)}</span>
             <span>{Math.round(used / 60000)} min used</span>
             <span>
-              Reached question {attempt.reached} · {answered} answered
+              {answered} of {items.length} answered
+              {attempt.endedOn ? ` · ${attempt.status === "active" ? "on" : "ended on"} question ${attempt.endedOn}` : ""}
             </span>
             <span className="inline-flex items-center gap-1.5">
               <ClientIcon className="size-3.5" />

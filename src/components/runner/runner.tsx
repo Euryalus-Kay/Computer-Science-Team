@@ -506,7 +506,7 @@ export function Runner(props: RunnerProps) {
         )}
       </div>
 
-      {contest.integrity.camera && !props.preview && <CameraMonitor onEvent={(t, d) => integrity.push(t, d)} />}
+      {contest.integrity.camera && !props.preview && <CameraMonitor attemptId={attemptId} onEvent={(t, d) => integrity.push(t, d)} />}
 
       {/* overlays */}
       {(paused || timeUp || needFullscreen) && (
