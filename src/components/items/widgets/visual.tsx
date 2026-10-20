@@ -3,7 +3,7 @@
 import { RotateCw, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/cn";
 import type { ItemProps } from "../types";
-import { Stage, AnswerField, Legend, Chip } from "./common";
+import { Stage, AnswerField, Legend, Chip, WideScroll } from "./common";
 import { figureDots, type FigurePattern, type CircuitPub, type PathsPub, type GateOp } from "@/lib/items/widgets/visual";
 
 /* ------------------------------------------------------------- figures */
@@ -70,50 +70,49 @@ function gearPath(teeth: number, r: number) {
 export function Gears({ item, value, onChange, disabled }: ItemProps<{ teeth: number[]; turns: number; labels: string[] }, { dir?: string; turns?: string }>) {
   const { teeth, labels } = item.data;
   const radii = teeth.map(gearRadius);
-  const pad = 24;
+  const pad = 30;
   const xs: number[] = [];
   let x = pad + radii[0] + 4;
   radii.forEach((r, i) => {
     if (i > 0) x += radii[i - 1] + r;
     xs.push(x);
   });
-  const width = xs[xs.length - 1] + radii[radii.length - 1] + pad + 4;
+  const width = xs[xs.length - 1] + radii[radii.length - 1] + pad;
   const maxR = Math.max(...radii);
-  const cy = maxR + 22;
-  const height = cy + maxR + 40;
+  const cy = maxR + 28;
+  const height = cy + maxR + 14;
+  // The arrow on gear A runs up its left side, which is the way a clockwise gear moves there.
+  const R = radii[0] + 12;
+  const at = (deg: number) => [R * Math.cos((deg * Math.PI) / 180), R * Math.sin((deg * Math.PI) / 180)].map((v) => v.toFixed(2)).join(" ");
   return (
     <div className="space-y-4">
       <Stage>
-        <div className="overflow-x-auto px-4 py-4">
-          <svg viewBox={`0 0 ${width} ${height}`} width={width} height={height} className="mx-auto block max-w-none">
+        <WideScroll className="px-4 pt-4 pb-2">
+          <svg viewBox={`0 0 ${width} ${height}`} className="mx-auto block" style={{ width: "100%", maxWidth: width * 1.5, minWidth: width * 0.8 }}>
             {teeth.map((t, i) => {
               const r = radii[i];
               const phase = i % 2 ? 180 / t : 0;
+              // Each gear carries its own tooth count in its hub, so labels never collide.
+              const hub = Math.min(r - 4.6, Math.max(7.5, r * 0.45));
               return (
                 <g key={i} transform={`translate(${xs[i]} ${cy})`}>
                   <g style={i === 0 ? { animation: "gear-spin 9s linear infinite", transformBox: "fill-box", transformOrigin: "center" } : undefined}>
                     <g transform={`rotate(${phase})`}>
                       <path d={gearPath(t, r)} fill={i === 0 ? "var(--accent-soft)" : "var(--panel-3)"} stroke={i === 0 ? "var(--accent)" : "var(--ink-3)"} strokeWidth={1.2} />
-                      <circle r={Math.max(3, r * 0.18)} fill="var(--panel)" stroke="var(--ink-3)" strokeWidth={1} />
                     </g>
                   </g>
-                  <text y={-r - 9} textAnchor="middle" className="fill-ink font-mono" fontSize={13} fontWeight={600}>
-                    {labels[i]}
+                  <circle r={hub} fill="var(--panel)" stroke="var(--ink-3)" strokeWidth={1} />
+                  <text textAnchor="middle" dominantBaseline="central" className="fill-ink font-mono" fontSize={hub < 9 ? 9 : hub < 12 ? 10.5 : 12} fontWeight={600}>
+                    {t}
                   </text>
-                  <text y={r + 20} textAnchor="middle" className="fill-ink-3" fontSize={11}>
-                    {t} teeth
+                  <text y={-r - 10} textAnchor="middle" className="fill-ink font-mono" fontSize={13} fontWeight={600}>
+                    {labels[i]}
                   </text>
                 </g>
               );
             })}
             <g transform={`translate(${xs[0]} ${cy})`}>
-              <path
-                d={`M ${-radii[0] - 12} -6 A ${radii[0] + 12} ${radii[0] + 12} 0 0 1 -6 ${-radii[0] - 12}`}
-                fill="none"
-                stroke="var(--accent)"
-                strokeWidth={1.6}
-                markerEnd="url(#gear-arrow)"
-              />
+              <path d={`M ${at(145)} A ${R} ${R} 0 0 1 ${at(215)}`} fill="none" stroke="var(--accent)" strokeWidth={1.6} markerEnd="url(#gear-arrow)" />
             </g>
             <defs>
               <marker id="gear-arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
@@ -121,7 +120,8 @@ export function Gears({ item, value, onChange, disabled }: ItemProps<{ teeth: nu
               </marker>
             </defs>
           </svg>
-        </div>
+        </WideScroll>
+        <div className="pb-3 text-center text-xs text-ink-3">The number on each gear is how many teeth it has.</div>
         <style>{`@keyframes gear-spin { to { transform: rotate(360deg); } }`}</style>
       </Stage>
       <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
@@ -181,7 +181,7 @@ export function Circuit({ item, value, onChange, disabled }: ItemProps<CircuitPu
   return (
     <div className="space-y-3">
       <Stage>
-        <div className="overflow-x-auto px-2 py-3">
+        <WideScroll className="px-2 py-3">
           <svg viewBox="0 0 560 270" className="mx-auto block w-full max-w-[620px] min-w-[460px]">
             {/* input wires */}
             {inputs.map(([sy, gy, gx, n], i) => (
@@ -242,7 +242,7 @@ export function Circuit({ item, value, onChange, disabled }: ItemProps<CircuitPu
               </g>
             ))}
           </svg>
-        </div>
+        </WideScroll>
       </Stage>
       <Legend
         items={[

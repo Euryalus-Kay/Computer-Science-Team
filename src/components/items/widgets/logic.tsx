@@ -4,7 +4,7 @@ import { Server, Check, X } from "lucide-react";
 import { cn } from "@/lib/cn";
 import type { ItemProps } from "../types";
 import { Inline } from "../inline";
-import { Stage, AnswerField } from "./common";
+import { Stage, AnswerField, WideScroll } from "./common";
 
 /* --------------------------------------------------------------- liars */
 
@@ -112,7 +112,8 @@ export function LogicGrid({ item, value, onChange, disabled }: ItemProps<GridPub
           ))}
         </ol>
       </div>
-      <Stage className="overflow-x-auto">
+      <Stage>
+        <WideScroll>
         <table className="w-full border-collapse text-center text-xs">
           <thead>
             <tr>
@@ -148,6 +149,7 @@ export function LogicGrid({ item, value, onChange, disabled }: ItemProps<GridPub
             ))}
           </tbody>
         </table>
+        </WideScroll>
         <div className="border-t border-line px-3 py-2 text-xs text-ink-3">Click once to rule out, again to pick, again to clear.</div>
       </Stage>
     </div>

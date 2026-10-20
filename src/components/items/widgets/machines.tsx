@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Play, RotateCcw, Undo2, Trash2, Plus, Minus, Flag } from "lucide-react";
 import { cn } from "@/lib/cn";
 import type { ItemProps } from "../types";
-import { Stage, Chip } from "./common";
+import { Stage, Chip, WideScroll } from "./common";
 import {
   simulate,
   blockCount,
@@ -399,8 +399,8 @@ export function Rail({ item, value, onChange, disabled }: ItemProps<{ cars: numb
   const go = (m: RailMove) => !disabled && onChange({ moves: [...moves, m] });
   return (
     <Stage>
-      <div className="space-y-5 px-5 py-5">
-        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+      <div className="space-y-5 px-5 py-5 @container">
+        <div className="grid items-center gap-3 @xl:grid-cols-[1fr_auto_1fr]">
           <div>
             <div className="mb-1.5 text-xs font-medium text-ink-3">Output</div>
             <div className="flex min-h-12 items-center gap-1.5 overflow-x-auto rounded-lg border border-line bg-panel-2 p-1">
@@ -409,7 +409,7 @@ export function Rail({ item, value, onChange, disabled }: ItemProps<{ cars: numb
               ))}
             </div>
           </div>
-          <div className="mt-5 h-0.5 w-10 bg-ink-3" />
+          <div className="mt-5 hidden h-0.5 w-10 bg-ink-3 @xl:block" />
           <div>
             <div className="mb-1.5 text-xs font-medium text-ink-3">Incoming (front on the left)</div>
             <div className="flex min-h-12 items-center gap-1.5 overflow-x-auto rounded-lg border border-line bg-panel-2 p-1">
@@ -721,7 +721,7 @@ export function Network({ item, value, onChange, disabled }: ItemProps<NetPub, {
   };
   return (
     <Stage>
-      <div className="overflow-x-auto px-3 py-3">
+      <WideScroll className="px-3 py-3">
         <svg viewBox={`0 0 ${W} ${H}`} className="mx-auto block w-full max-w-[620px] min-w-[460px]">
           {net.edges.map((e, i) => {
             const a = pos.get(e.a)!;
@@ -761,7 +761,7 @@ export function Network({ item, value, onChange, disabled }: ItemProps<NetPub, {
             );
           })}
         </svg>
-      </div>
+      </WideScroll>
       <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line px-4 py-2.5 text-sm">
         <span className="font-mono">{path.join(" → ")}</span>
         <span className="flex items-center gap-3">

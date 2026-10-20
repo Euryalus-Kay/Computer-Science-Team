@@ -42,7 +42,7 @@ export function TockCode({ code }: { code: string }) {
       {lines.map((l, i) => (
         <div key={i} className="flex">
           <span className="w-10 shrink-0 pr-3 text-right text-ink-4 select-none">{i + 1}</span>
-          <span className="pr-4 whitespace-pre">
+          <span className="min-w-0 pr-4 whitespace-pre-wrap [overflow-wrap:anywhere]">
             {highlightLine(l).map((p, j) => (
               <span key={j} style={p.c ? { color: p.c } : undefined}>
                 {p.t}

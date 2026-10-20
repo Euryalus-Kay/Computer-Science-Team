@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
+
 import type { ReactNode } from "react";
 import { cn } from "@/lib/cn";
 
@@ -53,6 +55,39 @@ export function AnswerField({
         data-answer
       />
     </label>
+  );
+}
+
+/** For drawings that can be wider than a phone: scrolls sideways and says so while part is hidden. */
+export function WideScroll({ children, className }: { children: ReactNode; className?: string }) {
+  const box = useRef<HTMLDivElement>(null);
+  const [more, setMore] = useState(false);
+  useEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    const check = () => setMore(el.scrollWidth - el.clientWidth - el.scrollLeft > 2);
+    check();
+    const ro = new ResizeObserver(check);
+    ro.observe(el);
+    if (el.firstElementChild) ro.observe(el.firstElementChild);
+    el.addEventListener("scroll", check, { passive: true });
+    return () => {
+      ro.disconnect();
+      el.removeEventListener("scroll", check);
+    };
+  }, []);
+  return (
+    <div className="relative">
+      <div ref={box} className={cn("overflow-x-auto", className)}>
+        {children}
+      </div>
+      {more && (
+        <>
+          <div className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-panel to-transparent" />
+          <div className="pointer-events-none absolute right-2 bottom-1.5 rounded bg-panel/90 px-1.5 py-0.5 text-[11px] text-ink-3 shadow-card">Swipe sideways to see all of it</div>
+        </>
+      )}
+    </div>
   );
 }
 

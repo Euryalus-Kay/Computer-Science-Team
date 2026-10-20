@@ -36,7 +36,7 @@ export function Glyph({ item, value, onChange, disabled }: ItemProps<{ code: str
         </Stage>
         <Stage>
           <div className="flex h-9 items-center border-b border-line px-3 text-xs font-medium text-ink-3">Glyph manual</div>
-          <div className="space-y-3 px-4 py-3 text-[13px]">
+          <div className="space-y-3 px-4 py-3 text-[13px] @container">
             <p className="text-ink-2">Glyph keeps a stack of numbers and reads the program left to right. Stacks are written bottom to top, so in 1 2 3 the top is 3.</p>
             <table className="w-full">
               <tbody>
@@ -48,7 +48,7 @@ export function Glyph({ item, value, onChange, disabled }: ItemProps<{ code: str
                 ))}
               </tbody>
             </table>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-1 border-t border-line pt-2.5 font-mono text-[12px]">
+            <div className="grid gap-x-4 gap-y-1 border-t border-line pt-2.5 font-mono text-[12px] @sm:grid-cols-2">
               {EXAMPLES.map(([code, out]) => (
                 <div key={code} className="flex justify-between gap-2">
                   <span>{code}</span>
