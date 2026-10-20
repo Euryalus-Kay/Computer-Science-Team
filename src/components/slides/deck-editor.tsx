@@ -54,6 +54,8 @@ export function DeckEditor({ initial, fileName, blob }: { initial: DeckInput; fi
 
   const onFile = async (f: File) => {
     if (f.type !== "application/pdf") return toast("Choose a PDF.", "error");
+    // Larger requests never reach the server's own check, so say it here.
+    if (!blob && f.size > 4 * 1024 * 1024) return toast("That PDF is over 4 MB. Connect Vercel Blob for larger files, or link to it instead.", "error");
     setUploading(true);
     try {
       if (blob && f.size > 4 * 1024 * 1024) {
