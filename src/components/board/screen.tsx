@@ -5,12 +5,14 @@ import QRCode from "qrcode";
 import { LogoMark } from "@/components/shell/logo";
 import { cn } from "@/lib/cn";
 import type { BoardState } from "@/lib/db/schema";
-import type { BoardTest } from "@/lib/board";
+import type { BoardDeck, BoardTest } from "@/lib/board";
+import { SlideBody } from "@/components/slides/slide-body";
+import { PdfPage } from "@/components/slides/pdf-page";
 
 export type BoardPayload = {
   state: BoardState;
   test: BoardTest | null;
-  deck: { id: string; title: string; count: number; slide: number; html: string } | null;
+  deck: BoardDeck | null;
   join: { code: string | null; siteName: string; timezone: string };
   serverNow: number;
 };
@@ -36,7 +38,20 @@ function Qr({ text, className }: { text: string; className?: string }) {
 }
 
 /** The projector view. Sized with container units so it also works as a small preview. */
-export function BoardScreen({ data, now, origin }: { data: BoardPayload; now: number | null; origin: string }) {
+export function BoardScreen({
+  data,
+  now,
+  origin,
+  preview = false,
+  onPages,
+}: {
+  data: BoardPayload;
+  now: number | null;
+  origin: string;
+  /** The remote's small copy: embedded decks aren't live there. */
+  preview?: boolean;
+  onPages?: (deckId: string, pages: number) => void;
+}) {
   const { state, test } = data;
   const host = origin.replace(/^https?:\/\//, "");
   return (
@@ -63,12 +78,7 @@ export function BoardScreen({ data, now, origin }: { data: BoardPayload; now: nu
           <JoinView code={data.join.code} siteName={data.join.siteName} origin={origin} host={host} />
         ) : state.view === "slides" ? (
           data.deck ? (
-            <div className="flex h-full w-full flex-col">
-              <div className="board-slide prose min-h-0 w-full flex-1 overflow-hidden" dangerouslySetInnerHTML={{ __html: data.deck.html }} />
-              <div className="num pt-[1.5cqh] text-right font-mono text-[1.3cqw] text-white/40">
-                {data.deck.slide + 1} / {data.deck.count}
-              </div>
-            </div>
+            <DeckView deck={data.deck} preview={preview} onPages={onPages} />
           ) : (
             <Big text="Pick a deck" dim />
           )
@@ -79,6 +89,44 @@ export function BoardScreen({ data, now, origin }: { data: BoardPayload; now: nu
             <LogoMark size={0} className="size-[10cqw]" />
           </span>
         )}
+      </div>
+    </div>
+  );
+}
+
+function DeckView({ deck, preview, onPages }: { deck: BoardDeck; preview: boolean; onPages?: (deckId: string, pages: number) => void }) {
+  if (deck.kind === "link") {
+    if (deck.embed && !preview)
+      return (
+        <div className="h-full w-full pt-[3cqh]">
+          <iframe src={deck.embed} title={deck.title} allowFullScreen className="h-full w-full rounded-[0.6cqw] border-0 bg-black" />
+        </div>
+      );
+    const host = deck.url ? deck.url.replace(/^https?:\/\//, "").split("/")[0] : "";
+    return (
+      <div className="flex w-full items-center justify-between gap-[5cqw]">
+        <div className="min-w-0">
+          <div className="text-[2cqw] text-white/50">{deck.embed ? "Showing on the projector" : host}</div>
+          <div className="mt-[1cqh] text-[5cqw] leading-[1.1] font-semibold tracking-[-0.02em] text-balance">{deck.title}</div>
+        </div>
+        {!deck.embed && deck.url && (
+          <div className="shrink-0 rounded-[1.2cqw] bg-white/[0.04] p-[2cqw]">
+            <Qr text={deck.url} className="size-[30cqh]" />
+          </div>
+        )}
+      </div>
+    );
+  }
+  if (deck.kind === "pdf" && !deck.fileUrl) return <Big text="This deck has no PDF yet" dim />;
+  return (
+    <div className="flex h-full w-full flex-col pt-[3cqh]">
+      {deck.kind === "pdf" ? (
+        <PdfPage url={deck.fileUrl!} page={deck.slide} onPages={(n) => onPages?.(deck.id, n)} className="min-h-0 flex-1" />
+      ) : (
+        <SlideBody html={deck.html} className="min-h-0 w-full flex-1 overflow-hidden" />
+      )}
+      <div className="num pt-[1.5cqh] text-right font-mono text-[1.3cqw] text-white/40">
+        {deck.slide + 1} / {deck.count ?? "–"}
       </div>
     </div>
   );

@@ -10,6 +10,7 @@ import { useToast } from "@/components/ui/toast";
 import { saveDeck, deleteDeck, uploadFile, registerBlob, type DeckInput } from "@/lib/admin/decks";
 import { previewTestMarkdown } from "@/lib/admin/tests";
 import { Segmented } from "@/components/admin/tests/editor/fields";
+import { SlideBody } from "./slide-body";
 
 function split(md: string) {
   return md
@@ -98,21 +99,19 @@ export function DeckEditor({ initial, fileName, blob }: { initial: DeckInput; fi
               <Button icon={<Eye className="size-4" />} onClick={() => window.open(`/slides/${deck.id}`, "_blank")}>
                 View
               </Button>
-              {deck.kind === "markdown" && (
-                <Button
-                  icon={<MonitorPlay className="size-4" />}
-                  onClick={async () => {
-                    const r = await fetch("/api/board/state", {
-                      method: "PATCH",
-                      headers: { "content-type": "application/json" },
-                      body: JSON.stringify({ view: "slides", deckId: deck.id, slide: Math.max(0, current) }),
-                    });
-                    toast(r.ok ? "Showing on the board" : "Couldn't update the board");
-                  }}
-                >
-                  Board
-                </Button>
-              )}
+              <Button
+                icon={<MonitorPlay className="size-4" />}
+                onClick={async () => {
+                  const r = await fetch("/api/board/state", {
+                    method: "PATCH",
+                    headers: { "content-type": "application/json" },
+                    body: JSON.stringify({ view: "slides", deckId: deck.id, slide: deck.kind === "markdown" ? Math.max(0, current) : 0 }),
+                  });
+                  toast(r.ok ? "Showing on the board" : "Couldn't update the board", r.ok ? "default" : "error");
+                }}
+              >
+                Board
+              </Button>
             </>
           )}
           <Button variant="primary" onClick={save} disabled={saving || uploading}>
@@ -144,7 +143,7 @@ export function DeckEditor({ initial, fileName, blob }: { initial: DeckInput; fi
           <div>
             <div data-theme="dark" className="relative aspect-video w-full overflow-hidden rounded-xl bg-[#0b0d10] text-[#eef0f3] shadow-card [container-type:size]">
               <div className="absolute inset-0 px-[6cqw] py-[6cqh]">
-                <div className="board-slide prose h-full overflow-hidden" dangerouslySetInnerHTML={{ __html: html }} />
+                <SlideBody html={html} className="h-full overflow-hidden" />
               </div>
               <div className="num absolute right-[2.5cqw] bottom-[2cqh] font-mono text-[1.3cqw] text-white/35">
                 {Math.max(0, current) + 1} / {slides.length}

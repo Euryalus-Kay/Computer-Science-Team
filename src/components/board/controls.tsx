@@ -65,6 +65,7 @@ export function BoardControls({
     dark ? "border border-white/15 bg-white/10 text-white placeholder:text-white/40 [&>option]:text-black" : "field field-sm w-auto",
   );
   const t = data.test;
+  const deck = data.deck;
   const timerRunning = Boolean(s.timer.endsAt);
 
   return (
@@ -185,13 +186,19 @@ export function BoardControls({
               </option>
             ))}
           </select>
-          <button className={btn} disabled={!data.deck || s.slide <= 0} onClick={() => patch({ slide: s.slide - 1 })} aria-label="Previous slide">
-            <ChevronLeft className="size-4" />
-          </button>
-          <span className={cn("num font-mono text-sm", dark ? "text-white/70" : "text-ink-3")}>{data.deck ? `${data.deck.slide + 1} / ${data.deck.count}` : "–"}</span>
-          <button className={btn} disabled={!data.deck || s.slide >= data.deck.count - 1} onClick={() => patch({ slide: s.slide + 1 })} aria-label="Next slide">
-            <ChevronRight className="size-4" />
-          </button>
+          {deck?.kind === "link" ? (
+            deck.embed && <span className={cn("text-sm", dark ? "text-white/60" : "text-ink-3")}>Use the arrows on the slides</span>
+          ) : (
+            <>
+              <button className={btn} disabled={!deck?.count || deck.slide <= 0} onClick={() => deck && patch({ slide: deck.slide - 1 })} aria-label="Previous slide">
+                <ChevronLeft className="size-4" />
+              </button>
+              <span className={cn("num font-mono text-sm", dark ? "text-white/70" : "text-ink-3")}>{deck ? `${deck.slide + 1} / ${deck.count ?? "–"}` : "–"}</span>
+              <button className={btn} disabled={!deck?.count || deck.slide >= deck.count - 1} onClick={() => deck && patch({ slide: deck.slide + 1 })} aria-label="Next slide">
+                <ChevronRight className="size-4" />
+              </button>
+            </>
+          )}
         </>
       )}
 

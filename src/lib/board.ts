@@ -97,6 +97,19 @@ export type BoardTest = {
   maxScore: number;
 };
 
+export type BoardDeck = {
+  id: string;
+  title: string;
+  kind: "markdown" | "pdf" | "link";
+  /** Null until known: a PDF's pages are counted in the browser, and a link has none. */
+  count: number | null;
+  slide: number;
+  html: string;
+  fileUrl: string | null;
+  url: string | null;
+  embed: string | null;
+};
+
 /** Everything the projector shows, in one payload. */
 export async function boardPayload() {
   const [state, settings] = await Promise.all([getBoard(), getSettings()]);
@@ -128,14 +141,20 @@ export async function boardPayload() {
       };
     }
   }
-  let deck: { id: string; title: string; count: number; slide: number; html: string } | null = null;
+  let deck: BoardDeck | null = null;
   if (state.view === "slides" && state.deckId) {
     const d = await db();
     const [row] = await d.select().from(decks).where(eq(decks.id, state.deckId)).limit(1);
     if (row) {
-      const slides = splitSlides(row.body);
-      const i = Math.min(state.slide, Math.max(0, slides.length - 1));
-      deck = { id: row.id, title: row.title, count: slides.length, slide: i, html: await slideHtml(row.id, row.updatedAt.getTime(), i, slides[i] ?? "") };
+      const base = { id: row.id, title: row.title, kind: row.kind, html: "", fileUrl: null, url: row.url, embed: row.url ? embedUrl(row.url) : null };
+      if (row.kind === "markdown") {
+        const slides = splitSlides(row.body);
+        const i = Math.min(state.slide, Math.max(0, slides.length - 1));
+        deck = { ...base, count: slides.length, slide: i, html: await slideHtml(row.id, row.updatedAt.getTime(), i, slides[i] ?? "") };
+      } else {
+        // Only the browser drawing a PDF learns its page count, so the board fills it in.
+        deck = { ...base, count: null, slide: state.slide, fileUrl: row.kind === "pdf" && row.fileId ? `/api/files/${row.fileId}` : null };
+      }
     }
   }
   return {
@@ -153,6 +172,15 @@ function initials(name: string) {
     .filter(Boolean)
     .map((p) => p[0]!.toUpperCase() + ".")
     .join(" ");
+}
+
+/** Google Slides and Canva links work best as their embed view. */
+export function embedUrl(url: string): string | null {
+  const m = url.match(/^https:\/\/docs\.google\.com\/presentation\/d\/([\w-]+)/);
+  if (m) return `https://docs.google.com/presentation/d/${m[1]}/embed?start=false&loop=false`;
+  const c = url.match(/^https:\/\/www\.canva\.com\/design\/([\w-]+)\/([\w-]+)/);
+  if (c) return `https://www.canva.com/design/${c[1]}/${c[2]}/view?embed`;
+  return null;
 }
 
 /** Slides in a markdown deck are separated by a line with three dashes. */

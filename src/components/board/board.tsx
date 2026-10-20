@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Maximize2, Minimize2, X } from "lucide-react";
 import { cn } from "@/lib/cn";
@@ -38,7 +38,15 @@ export function useBoard(initial: BoardPayload, everyMs = 1500) {
     const t = setInterval(refresh, everyMs);
     return () => clearInterval(t);
   }, [refresh, everyMs]);
-  return { data, offset, refresh, patch };
+  // A PDF's page count comes from drawing it here, not from the server.
+  const [pages, setPages] = useState<Record<string, number>>({});
+  const onPages = useCallback((id: string, n: number) => setPages((p) => (p[id] === n ? p : { ...p, [id]: n })), []);
+  const shown = useMemo(() => {
+    const d = data.deck;
+    const n = d && d.kind === "pdf" && d.count === null ? pages[d.id] : undefined;
+    return n ? { ...data, deck: { ...d!, count: n, slide: Math.min(d!.slide, n - 1) } } : data;
+  }, [data, pages]);
+  return { data: shown, offset, refresh, patch, onPages };
 }
 
 function chime() {
@@ -59,7 +67,7 @@ function chime() {
 }
 
 export function BoardApp({ initial, tests, decks }: { initial: BoardPayload; tests: Option[]; decks: Option[] }) {
-  const { data, offset, refresh, patch } = useBoard(initial);
+  const { data, offset, refresh, patch, onPages } = useBoard(initial);
   const tick = useNow(250);
   const now = tick === null ? null : tick + offset;
   const [dock, setDock] = useState(true);
@@ -97,8 +105,8 @@ export function BoardApp({ initial, tests, decks }: { initial: BoardPayload; tes
       else if (e.key === " " && s.view === "timer") {
         e.preventDefault();
         patch({ timer: { action: s.timer.endsAt ? "pause" : "start" } });
-      } else if ((e.key === "ArrowRight" || e.key === "PageDown") && s.view === "slides" && data.deck && s.slide < data.deck.count - 1) patch({ slide: s.slide + 1 });
-      else if ((e.key === "ArrowLeft" || e.key === "PageUp") && s.view === "slides" && s.slide > 0) patch({ slide: s.slide - 1 });
+      } else if ((e.key === "ArrowRight" || e.key === "PageDown") && s.view === "slides" && data.deck?.count && data.deck.slide < data.deck.count - 1) patch({ slide: data.deck.slide + 1 });
+      else if ((e.key === "ArrowLeft" || e.key === "PageUp") && s.view === "slides" && data.deck?.count && data.deck.slide > 0) patch({ slide: data.deck.slide - 1 });
       else if (/^[1-5]$/.test(e.key)) patch({ view: (["test", "timer", "join", "slides", "blank"] as const)[Number(e.key) - 1] });
       else return;
       poke();
@@ -120,7 +128,7 @@ export function BoardApp({ initial, tests, decks }: { initial: BoardPayload; tes
 
   return (
     <div className={cn("fixed inset-0 bg-[#0b0d10]", !dock && "cursor-none")}>
-      <BoardScreen data={data} now={now} origin={origin} />
+      <BoardScreen data={data} now={now} origin={origin} onPages={onPages} />
       <div
         onMouseEnter={() => (overDock.current = true)}
         onMouseLeave={() => (overDock.current = false)}

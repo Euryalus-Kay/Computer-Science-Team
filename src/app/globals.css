@@ -474,32 +474,47 @@
 }
 
 /* Slides on the projector board. Sizes follow the board, not the window. */
+/* Sizes follow the slide's width. --fit shrinks a slide that holds more than fits (see SlideBody). */
 .board-slide {
-  font-size: 2.3cqw;
+  --fit: 1;
+  font-size: calc(2.3cqw * var(--fit));
   line-height: 1.45;
   max-width: none;
 }
 .board-slide h1 {
-  font-size: 4.6cqw;
+  font-size: calc(4.6cqw * var(--fit));
   line-height: 1.1;
   letter-spacing: -0.03em;
-  margin-bottom: 3cqh;
+  margin-bottom: calc(3cqh * var(--fit));
 }
 .board-slide h2 {
-  font-size: 3.4cqw;
+  font-size: calc(3.4cqw * var(--fit));
   line-height: 1.15;
   letter-spacing: -0.02em;
-  margin-bottom: 2.4cqh;
+  margin-bottom: calc(2.4cqh * var(--fit));
 }
 .board-slide h3 {
-  font-size: 2.6cqw;
+  font-size: calc(2.6cqw * var(--fit));
 }
 .board-slide pre,
 .board-slide code {
-  font-size: 1.8cqw;
+  font-size: calc(1.8cqw * var(--fit));
+}
+.board-slide pre {
+  padding: 0.7em 0.9em;
+}
+.board-slide table {
+  font-size: calc(1.9cqw * var(--fit));
+}
+.board-slide th,
+.board-slide td {
+  padding: 0.35em 0.7em;
 }
 .board-slide li {
-  margin: 0.8cqh 0;
+  margin: calc(0.8cqh * var(--fit)) 0;
+}
+.board-slide img {
+  max-height: 70cqh;
 }
 /* Title slides sit in the middle. */
 .board-slide:has(> h1:first-child) {
