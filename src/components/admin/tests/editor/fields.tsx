@@ -151,7 +151,7 @@ export function ListEditor({
         <div key={i} className="group flex items-center gap-2">
           {marker && <div className="w-6 shrink-0">{marker(i)}</div>}
           <input value={v} onChange={(e) => set(i, e.target.value)} placeholder={placeholder?.(i)} className="field field-sm flex-1" />
-          <div className="flex opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100">
+          <div className="flex transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 [@media(hover:hover)]:opacity-0">
             <IconBtn label="Move up" onClick={() => move(i, -1)} disabled={i === 0}>
               <ArrowUp className="size-3.5" />
             </IconBtn>

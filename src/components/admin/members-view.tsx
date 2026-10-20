@@ -438,7 +438,7 @@ function GroupsCard({ groups, members, run, pending }: { groups: GroupRow[]; mem
               <span className="num text-sm text-ink-3">{counts.get(g.id) ?? 0}</span>
               <button
                 onClick={() => confirm(`Delete group "${g.name}"?`) && run(deleteGroup(g.id))}
-                className="rounded p-1 text-ink-4 opacity-0 group-hover:opacity-100 hover:bg-panel-3 hover:text-red"
+                className="rounded p-1 text-ink-4 group-focus-within:opacity-100 group-hover:opacity-100 hover:bg-panel-3 hover:text-red [@media(hover:hover)]:opacity-0"
                 aria-label={`Delete ${g.name}`}
               >
                 <Trash2 className="size-3.5" />

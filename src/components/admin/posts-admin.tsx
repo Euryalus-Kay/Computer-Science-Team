@@ -72,7 +72,7 @@ export function PostsAdmin({ posts, timezone }: { posts: PostView[]; timezone: s
                   {p.pinned && <Pin className="size-3.5 text-accent" />}
                   {p.author ?? "Admin"} · {formatDateTime(p.createdAt, timezone)}
                 </span>
-                <span className="flex gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+                <span className="flex gap-0.5 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 [@media(hover:hover)]:opacity-0">
                   <button
                     onClick={() => run(setPinned(p.id, !p.pinned), p.pinned ? "Unpinned" : "Pinned")}
                     className="rounded p-1.5 text-ink-3 hover:bg-panel-3 hover:text-ink"
