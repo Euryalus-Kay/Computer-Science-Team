@@ -78,6 +78,8 @@ async function createPglite(): Promise<DB> {
   const { PGlite } = await import("@electric-sql/pglite");
   const { drizzle: drizzlePglite } = await import("drizzle-orm/pglite");
   const dir = process.env.PGLITE_DIR || ".data/pglite";
+  // PGlite only creates the last folder, and a fresh checkout has no .data yet.
+  if (!dir.includes("://")) (await import("node:fs")).mkdirSync(dir, { recursive: true });
   const client = new PGlite(dir);
   await runMigrations({
     query: async (sql) => {
