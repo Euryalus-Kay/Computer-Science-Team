@@ -56,7 +56,8 @@ export async function seedTests(adminId: string, problemIds: Record<string, stri
         "30 minutes, 30 questions. Nobody is expected to finish, so skip anything that stalls you and come back if there's time. Later questions are worth more.\n\nEveryone gets different numbers, so comparing answers won't help.",
       status: "published",
       durationMin: 30,
-      startMode: "live",
+      // Each student starts whenever they like, at school or at home, and gets 30 minutes from their own start.
+      startMode: "open",
       visibility: "everyone",
       showResults: "never",
       resultsDetail: "score",
