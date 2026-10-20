@@ -1,0 +1,16 @@
+import { open, login, shot, BASE } from "./lib.mjs";
+const { browser, page } = await open();
+await login(page);
+await page.goto(BASE + "/playground");
+await page.waitForSelector(".cm-content");
+await page.click(".cm-content");
+await page.keyboard.press("Control+A");
+await page.keyboard.type("n = int(input())\nfor i in range(1, n + 1):\nprint(i * i, end=' ')\n");
+await page.fill("textarea", "6");
+await page.click("button:has-text('Run')");
+await page.waitForSelector("text=Finished", { timeout: 60000 });
+await shot(page, "10-playground");
+await page.click("button:has-text('Python')");
+await page.fill("input[placeholder='Search languages']", "ru");
+await shot(page, "11-langpicker");
+await browser.close();

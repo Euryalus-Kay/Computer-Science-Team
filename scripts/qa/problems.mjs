@@ -1,0 +1,35 @@
+import { open, login, shot, BASE } from "./lib.mjs";
+const { browser, page } = await open();
+await login(page);
+await page.goto(BASE + "/problems");
+await shot(page, "20-problems");
+await page.goto(BASE + "/problems/running-total");
+await page.waitForSelector(".cm-content");
+await shot(page, "21-problem");
+// write a solution and run examples
+await page.click(".cm-content");
+await page.keyboard.press("Control+A");
+await page.keyboard.press("Delete");
+await page.keyboard.insertText("n = int(input())\nxs = list(map(int, input().split()))\ns = 0\nout = []\nfor x in xs:\n    s += x\n    out.append(s)\nprint(*out)\n");
+await page.click("button:has-text('Run')");
+await page.waitForSelector("text=examples passed", { timeout: 60000 });
+await shot(page, "22-problem-run");
+await page.click("button:has-text('Submit')");
+await page.waitForSelector("text=/\\d+\\/\\d+ tests/", { timeout: 90000 });
+await shot(page, "23-problem-submit");
+// wrong answer flow
+await page.click(".cm-content");
+await page.keyboard.press("Control+A");
+await page.keyboard.press("Delete");
+await page.keyboard.insertText("input()\nprint(input())\n");
+await page.click("button:has-text('Submit')");
+await page.waitForSelector("text=Wrong answer", { timeout: 90000 });
+await shot(page, "24-problem-wa");
+await page.goto(BASE + "/admin/problems");
+await shot(page, "25-admin-problems");
+await page.click("text=Bit-String Flicking");
+await page.waitForSelector("text=Preview");
+await shot(page, "26-problem-editor");
+await page.click("button:has-text('Tests ·')");
+await shot(page, "27-problem-editor-tests");
+await browser.close();

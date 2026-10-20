@@ -1,0 +1,46 @@
+import type { Extension } from "@codemirror/state";
+import { StreamLanguage, type StreamParser } from "@codemirror/language";
+
+const legacy = <T>(p: Promise<T>, pick: (m: T) => StreamParser<unknown>) => p.then((m) => StreamLanguage.define(pick(m)));
+
+/** Lazily loads syntax support for an editor mode key from the language registry. */
+export const MODE_LOADERS: Record<string, () => Promise<Extension>> = {
+  python: () => import("@codemirror/lang-python").then((m) => m.python()),
+  java: () => import("@codemirror/lang-java").then((m) => m.java()),
+  cpp: () => import("@codemirror/lang-cpp").then((m) => m.cpp()),
+  javascript: () => import("@codemirror/lang-javascript").then((m) => m.javascript()),
+  typescript: () => import("@codemirror/lang-javascript").then((m) => m.javascript({ typescript: true })),
+  go: () => import("@codemirror/lang-go").then((m) => m.go()),
+  rust: () => import("@codemirror/lang-rust").then((m) => m.rust()),
+  php: () => import("@codemirror/lang-php").then((m) => m.php({ plain: false })),
+  sql: () => import("@codemirror/lang-sql").then((m) => m.sql()),
+  kotlin: () => legacy(import("@codemirror/legacy-modes/mode/clike"), (m) => m.kotlin),
+  csharp: () => legacy(import("@codemirror/legacy-modes/mode/clike"), (m) => m.csharp),
+  scala: () => legacy(import("@codemirror/legacy-modes/mode/clike"), (m) => m.scala),
+  dart: () => legacy(import("@codemirror/legacy-modes/mode/clike"), (m) => m.dart),
+  objectivec: () => legacy(import("@codemirror/legacy-modes/mode/clike"), (m) => m.objectiveC),
+  swift: () => legacy(import("@codemirror/legacy-modes/mode/swift"), (m) => m.swift),
+  ruby: () => legacy(import("@codemirror/legacy-modes/mode/ruby"), (m) => m.ruby),
+  lua: () => legacy(import("@codemirror/legacy-modes/mode/lua"), (m) => m.lua),
+  haskell: () => legacy(import("@codemirror/legacy-modes/mode/haskell"), (m) => m.haskell),
+  r: () => legacy(import("@codemirror/legacy-modes/mode/r"), (m) => m.r),
+  shell: () => legacy(import("@codemirror/legacy-modes/mode/shell"), (m) => m.shell),
+  pascal: () => legacy(import("@codemirror/legacy-modes/mode/pascal"), (m) => m.pascal),
+  perl: () => legacy(import("@codemirror/legacy-modes/mode/perl"), (m) => m.perl),
+  ocaml: () => legacy(import("@codemirror/legacy-modes/mode/mllike"), (m) => m.oCaml),
+  fsharp: () => legacy(import("@codemirror/legacy-modes/mode/mllike"), (m) => m.fSharp),
+  erlang: () => legacy(import("@codemirror/legacy-modes/mode/erlang"), (m) => m.erlang),
+  clojure: () => legacy(import("@codemirror/legacy-modes/mode/clojure"), (m) => m.clojure),
+  fortran: () => legacy(import("@codemirror/legacy-modes/mode/fortran"), (m) => m.fortran),
+  groovy: () => legacy(import("@codemirror/legacy-modes/mode/groovy"), (m) => m.groovy),
+  commonlisp: () => legacy(import("@codemirror/legacy-modes/mode/commonlisp"), (m) => m.commonLisp),
+  d: () => legacy(import("@codemirror/legacy-modes/mode/d"), (m) => m.d),
+  cobol: () => legacy(import("@codemirror/legacy-modes/mode/cobol"), (m) => m.cobol),
+  julia: () => legacy(import("@codemirror/legacy-modes/mode/julia"), (m) => m.julia),
+  crystal: () => legacy(import("@codemirror/legacy-modes/mode/crystal"), (m) => m.crystal),
+  vb: () => legacy(import("@codemirror/legacy-modes/mode/vb"), (m) => m.vb),
+  octave: () => legacy(import("@codemirror/legacy-modes/mode/octave"), (m) => m.octave),
+  gas: () => legacy(import("@codemirror/legacy-modes/mode/gas"), (m) => m.gas),
+  tock: () => import("./tock-mode").then((m) => StreamLanguage.define(m.tockMode)),
+  text: async () => [],
+};
