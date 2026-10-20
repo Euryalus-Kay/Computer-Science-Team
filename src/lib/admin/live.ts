@@ -4,7 +4,7 @@ import { answers, attempts, groupMembers, integrityEvents, users, type Integrity
 import { getItems, type ContestRow } from "@/lib/tests/attempts";
 import { availability, isPaused, remainingMs } from "@/lib/tests/timing";
 import { emptyStats, flagsFromStats, riskOf, type Stats } from "@/lib/integrity/analyze";
-import { EVENT_LABEL } from "@/lib/integrity/events";
+import { eventLabel } from "@/lib/integrity/events";
 
 export type LiveRow = {
   attemptId: string;
@@ -232,7 +232,7 @@ export async function liveSnapshot(c: ContestRow, opts: { previews?: boolean; fe
       attemptId: e.attemptId,
       name,
       type: e.type,
-      label: EVENT_LABEL[e.type] ?? e.type,
+      label: eventLabel(e.type, e.data),
       severity: e.severity,
       item: e.itemId ? (itemTitle.get(e.itemId) ?? null) : null,
     }));

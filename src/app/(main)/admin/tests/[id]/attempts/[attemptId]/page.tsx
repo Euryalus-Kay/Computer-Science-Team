@@ -7,7 +7,7 @@ import { integrityEvents, submissions, users } from "@/lib/db/schema";
 import { getAnswers, getItems, loadAttempt } from "@/lib/tests/attempts";
 import { describeAnswer, publicItem } from "@/lib/items/engine";
 import { summarizeAttempt } from "@/lib/integrity/analyze";
-import { EVENT_LABEL } from "@/lib/integrity/events";
+import { eventLabel } from "@/lib/integrity/events";
 import { remainingMs } from "@/lib/tests/timing";
 import { aiConfigured, getSettings } from "@/lib/settings";
 import { AttemptReview, type ReviewItem } from "@/components/admin/tests/attempt-review";
@@ -103,7 +103,7 @@ export default async function AttemptPage(props: PageProps<"/admin/tests/[id]/at
         id: e.id,
         at: e.at.getTime(),
         type: e.type,
-        label: EVENT_LABEL[e.type] ?? e.type,
+        label: eventLabel(e.type, e.data),
         severity: e.severity,
         item: e.itemId ? (titleOf.get(e.itemId) ?? null) : null,
         data: e.data ?? null,

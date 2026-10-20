@@ -23,7 +23,7 @@ import { attemptDeadline, isPaused } from "@/lib/tests/timing";
 import { analyzeContest, summarizeAttempt } from "@/lib/integrity/analyze";
 import { gradeOneWithAi, gradePendingWithAi } from "@/lib/ai/grade";
 import { askJson } from "@/lib/ai/client";
-import { EVENT_LABEL } from "@/lib/integrity/events";
+import { eventLabel } from "@/lib/integrity/events";
 import { WIDGETS } from "@/lib/items/widgets";
 import { renderMarkdown } from "@/lib/markdown";
 
@@ -604,7 +604,7 @@ export async function aiReviewAttempt(attemptId: string): Promise<Result> {
     })
     .join("\n");
   const eventLines = events
-    .map((e) => `${mmss(e.at.getTime())} ${EVENT_LABEL[e.type] ?? e.type}${e.itemId ? ` on ${title.get(e.itemId) ?? "a question"}` : ""}${e.data ? ` ${JSON.stringify(e.data).slice(0, 160)}` : ""}`)
+    .map((e) => `${mmss(e.at.getTime())} ${eventLabel(e.type, e.data)}${e.itemId ? ` on ${title.get(e.itemId) ?? "a question"}` : ""}${e.data ? ` ${JSON.stringify(e.data).slice(0, 160)}` : ""}`)
     .join("\n");
   const prompt = `Test: ${l.contest.title}, ${l.contest.durationMin ?? "untimed"} minutes, taken in ${l.attempt.client?.kind ?? "web"} mode.
 Automatic flags:

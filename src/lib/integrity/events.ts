@@ -144,3 +144,9 @@ export const EVENT_LABEL: Record<string, string> = {
   second_device: "Signed in from a second device",
   ip_change: "Network address changed",
 };
+
+/** How an event reads in timelines and feeds. */
+export function eventLabel(type: string, data?: Record<string, unknown> | null): string {
+  if (type === "camera_denied" && data?.declined) return "Said no to the camera check";
+  return EVENT_LABEL[type] ?? type;
+}
