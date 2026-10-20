@@ -76,14 +76,14 @@ export function Split({
           document.body.style.userSelect = "none";
         }}
         className={cn(
-          "group relative z-10 shrink-0 bg-line",
+          "group relative z-10 shrink-0 touch-none bg-line",
           row ? "w-px cursor-col-resize" : "h-px cursor-row-resize",
         )}
       >
         <div
           className={cn(
             "absolute bg-transparent transition-colors group-hover:bg-blue/40",
-            row ? "inset-y-0 -left-[2px] w-[5px]" : "inset-x-0 -top-[2px] h-[5px]",
+            row ? "inset-y-0 -left-[2px] w-[5px]" : "inset-x-0 -top-[2px] h-[5px] [@media(pointer:coarse)]:-top-[8px] [@media(pointer:coarse)]:h-[17px]",
           )}
         />
       </div>

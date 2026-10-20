@@ -8,6 +8,7 @@ import { ExecMeta, ExecOutput } from "@/components/editor/output";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Split } from "@/components/ui/split";
+import { useMedia } from "@/lib/use-media";
 import { useToast } from "@/components/ui/toast";
 import { getLanguage, CORE_LANGUAGES } from "@/lib/runner/languages";
 import type { ExecResult } from "@/lib/runner";
@@ -150,6 +151,8 @@ export function Workspace({
   const [code, setCode] = useState(() => templateFor(defaultLang));
   const [custom, setCustom] = useState(problem.samples[0]?.input ?? "");
   const [panel, setPanel] = useState<Panel>("results");
+  // Phones stack the statement above the editor instead of squeezing them side by side.
+  const narrow = useMedia("(max-width: 767px)");
   const [state, setState] = useState<RunState>({ kind: "idle" });
   const [subs, setSubs] = useState<SubmissionSummary[]>(initialSubmissions);
   const busy = state.kind === "running";
@@ -265,11 +268,13 @@ export function Workspace({
   return (
     <div className={cn("flex flex-col", height)}>
       <Split
+        key={narrow ? "stacked" : "side"}
         className="min-h-0 flex-1"
-        storageKey="workspace"
-        initial={0.42}
-        min={0.25}
-        max={0.7}
+        direction={narrow ? "column" : "row"}
+        storageKey={narrow ? "workspace-stacked" : "workspace"}
+        initial={narrow ? 0.36 : 0.42}
+        min={narrow ? 0.15 : 0.25}
+        max={narrow ? 0.75 : 0.7}
         first={<Statement problem={problem} header={statementHeader} />}
         second={
           <div className="flex h-full flex-col">
