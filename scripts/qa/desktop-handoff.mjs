@@ -89,6 +89,9 @@ const reuse = await (await browser.newContext()).request.get(BASE + "/desktop/la
 });
 // With a shared secret the unsigned request is refused before the token is even looked at.
 check("launch link can't be used twice", reuse.status() === (process.env.LABCS_DESKTOP_SECRET ? 403 : 410), String(reuse.status()));
+// Copies older than the site's minimum version are asked to update.
+const old = await (await browser.newContext()).request.get(BASE + "/desktop/launch?token=x", { headers: { "X-LabCS-Desktop": "0.9.0; linux" }, maxRedirects: 0 });
+if (!process.env.LABCS_DESKTOP_SECRET) check("old app versions are asked to update", old.status() === 426, String(old.status()));
 // And the launch page refuses plain browsers.
 const plain = await (await browser.newContext()).request.get(BASE + "/desktop/launch?token=x", { maxRedirects: 0 });
 check("launch page refuses a normal browser", plain.status() === 403, String(plain.status()));
