@@ -90,6 +90,8 @@ export function Short({ item, value, onChange, disabled }: ItemProps<{ placehold
       placeholder={item.data?.placeholder ?? "Your answer"}
       spellCheck={false}
       autoComplete="off"
+      autoCapitalize="none"
+      autoCorrect="off"
       className="field max-w-md font-mono text-[15px]"
       data-answer
     />

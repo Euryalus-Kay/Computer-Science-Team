@@ -121,9 +121,8 @@ export async function startAttempt(
       return { ok: false, error: msg[av.state] ?? "Not available." };
     }
     if (c.visibility === "code" && !isAdmin) {
-      if (!opts.code || opts.code.trim().toUpperCase() !== (c.accessCode ?? "").toUpperCase()) {
-        return { ok: false, error: "Enter the access code to start." };
-      }
+      if (!opts.code?.trim()) return { ok: false, error: "Enter the access code to start." };
+      if (opts.code.trim().toUpperCase() !== (c.accessCode ?? "").toUpperCase()) return { ok: false, error: "That access code isn't right." };
     }
     const lock = lockdownOk(c, session, preview);
     if (!lock.ok) return { ok: false, error: "This test has to be taken in lockdown mode.", need: lock.need };

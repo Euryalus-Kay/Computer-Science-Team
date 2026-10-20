@@ -264,7 +264,9 @@ export function runCommand(sh: Shell, line: string): { out: string | null; cwd: 
     }
     case "grep": {
       if (plain.length < 2) return { out: "usage: grep [-c] [-i] <text> <file>", cwd: sh.cwd };
-      const pattern = plain.slice(0, -1).join(" ").replace(/^["']|["']$/g, "");
+      // A quoted pattern keeps its exact spacing, as in a real shell.
+      const quoted = line.match(/(["'])(.*?)\1/);
+      const pattern = quoted ? quoted[2] : plain.slice(0, -1).join(" ").replace(/^["']|["']$/g, "");
       const f = file(plain[plain.length - 1]);
       if (f.err) return { out: f.err, cwd: sh.cwd };
       const ci = flags.some((x) => x.includes("i"));

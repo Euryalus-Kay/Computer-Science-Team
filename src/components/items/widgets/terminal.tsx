@@ -11,7 +11,11 @@ type Session = { shell: Shell; lines: Line[] };
 // One shell per environment, shared by every terminal question in the attempt.
 const sessions = new Map<string, Session>();
 function sessionFor(env: TerminalEnv): Session {
-  const key = `${env.host}:${JSON.stringify(env.fs).length}`;
+  // Keyed by the whole file system, so two attempts in one page load never share a shell.
+  const json = JSON.stringify(env.fs);
+  let h = 5381;
+  for (let i = 0; i < json.length; i++) h = (h * 33 + json.charCodeAt(i)) | 0;
+  const key = `${env.host}:${json.length}:${h}`;
   let s = sessions.get(key);
   if (!s) {
     s = {

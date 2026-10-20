@@ -28,9 +28,11 @@ export function Lock({ item, interact, state, disabled }: ItemProps<{ digits: nu
     try {
       const reply = await interact({ guess });
       if (reply?.error) setErr(reply.error);
-      if (reply?.guesses) setLocal({ guesses: reply.guesses, solved: reply.solved });
-      setCells(Array(digits).fill(""));
-      refs.current[0]?.focus();
+      if (reply?.guesses) {
+        setLocal({ guesses: reply.guesses, solved: reply.solved });
+        setCells(Array(digits).fill(""));
+        refs.current[0]?.focus();
+      }
     } catch {
       setErr("Couldn't reach the server. Try again.");
     } finally {
@@ -54,7 +56,8 @@ export function Lock({ item, interact, state, disabled }: ItemProps<{ digits: nu
                 value={c}
                 disabled={disabled || over || busy}
                 inputMode="numeric"
-                maxLength={1}
+                autoComplete="off"
+                onFocus={(e) => e.target.select()}
                 onChange={(e) => {
                   const d = e.target.value.replace(/\D/g, "").slice(-1);
                   const n = [...cells];
@@ -75,7 +78,7 @@ export function Lock({ item, interact, state, disabled }: ItemProps<{ digits: nu
             {local.solved ? "Unlocked" : left <= 0 ? "No tries left" : "Try code"}
           </Button>
           {err && <div className="text-sm text-red">{err}</div>}
-          <div className="text-xs text-ink-3">{local.solved ? `Opened in ${local.guesses.length}` : `${left} of ${maxGuesses} tries left`}</div>
+          <div className="text-xs text-ink-3">{local.solved ? `Opened in ${local.guesses.length} ${local.guesses.length === 1 ? "try" : "tries"}` : `${left} of ${maxGuesses} tries left`}</div>
         </div>
         <div className="min-w-[220px] flex-1">
           <div className="mb-2 flex items-center gap-4 text-xs text-ink-3">

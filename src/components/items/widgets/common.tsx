@@ -47,6 +47,8 @@ export function AnswerField({
         inputMode={inputMode}
         spellCheck={false}
         autoComplete="off"
+        autoCapitalize="none"
+        autoCorrect="off"
         className={cn("field", width, mono && "font-mono text-[15px]")}
         data-answer
       />
