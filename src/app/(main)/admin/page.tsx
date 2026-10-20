@@ -71,11 +71,12 @@ export default async function AdminOverview() {
     : [];
   const workingBy = new Map(working.map((w) => [w.contestId, w.n]));
 
+  const toGrade = pending.reduce((t, p) => t + p.n, 0);
   const stats = [
     { label: "Members", value: m.total, sub: `${m.active} active this week` },
     { label: "Tests running", value: running.filter((c) => testStatus(c).live || testStatus(c).label === "Open").length, sub: `${allTests.length} in total` },
-    { label: "Practice submissions", value: subs.n, sub: `${subs.solved} solves this week` },
-    { label: "To review", value: flaggedTotal.n, sub: pending.reduce((t, p) => t + p.n, 0) ? `${pending.reduce((t, p) => t + p.n, 0)} answers to grade` : "Nothing to grade" },
+    { label: "Practice submissions", value: subs.n, sub: `${subs.solved} ${subs.solved === 1 ? "solve" : "solves"} this week` },
+    { label: "To review", value: flaggedTotal.n, sub: toGrade ? `${toGrade} ${toGrade === 1 ? "answer" : "answers"} to grade` : "Nothing to grade" },
   ];
 
   return (
