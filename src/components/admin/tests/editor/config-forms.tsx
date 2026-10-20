@@ -89,7 +89,7 @@ function NumericForm({ config, set }: FormProps) {
   return (
     <div className="grid gap-4 sm:grid-cols-3">
       <Field label="Answer">
-        <NumberInput value={(config.answer as number) ?? null} onChange={(v) => set({ answer: v ?? undefined })} />
+        <NumberInput value={(config.answer as number) ?? null} onChange={(v) => set({ answer: v ?? undefined })} step="any" />
       </Field>
       <Field label="Allowed error" hint="0 for exact">
         <NumberInput value={(config.tolerance as number) ?? 0} onChange={(v) => set({ tolerance: v ?? 0 })} min={0} step={0.0001} />

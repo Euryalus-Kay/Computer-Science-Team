@@ -199,7 +199,8 @@ export function NumberInput({
   onChange: (v: number | null) => void;
   min?: number;
   max?: number;
-  step?: number;
+  /** Rounds to this step when the field loses focus. "any" keeps decimals as typed. */
+  step?: number | "any";
   className?: string;
   placeholder?: string;
 }) {
@@ -221,7 +222,9 @@ export function NumberInput({
       }}
       onBlur={() => {
         if (value === null) return;
-        const n = Math.min(max ?? Infinity, Math.max(min ?? -Infinity, Math.round(value / step) * step));
+        let n = Math.min(max ?? Infinity, Math.max(min ?? -Infinity, value));
+        // toFixed drops float noise such as 0.010000000000000002 from the rounding.
+        if (step !== "any") n = Number((Math.round(n / step) * step).toFixed((String(step).split(".")[1] ?? "").length));
         if (n !== value) onChange(n);
         setText(String(n));
       }}
