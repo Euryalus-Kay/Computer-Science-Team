@@ -92,7 +92,7 @@ export async function POST(req: Request, ctx: RouteContext<"/api/attempts/[id]/b
   return json({
     status: fresh.status,
     remainingMs: remainingMs(c.contest, fresh),
-    paused: isPaused(c.contest),
+    paused: !fresh.isPreview && isPaused(c.contest),
     serverNow: Date.now(),
   });
 }

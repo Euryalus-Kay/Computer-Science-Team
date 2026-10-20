@@ -17,6 +17,8 @@ export type TimingAttempt = {
   startedAt: Date;
   extraSeconds: number;
   status: "active" | "submitted" | "expired";
+  /** An admin's preview runs on its own clock, outside the live window, close time and pauses. */
+  isPreview?: boolean;
 };
 
 export const GRACE_MS = 15_000;
@@ -50,6 +52,7 @@ export function pausedWithin(pauses: PauseWindow[], from: number, to: number, no
  * because extending the window can pull in more pause time.
  */
 export function attemptDeadline(c: TimingContest, a: TimingAttempt, now = Date.now()): number | null {
+  if (a.isPreview) return c.durationMin ? a.startedAt.getTime() + c.durationMin * 60_000 + a.extraSeconds * 1000 : null;
   const extras = (c.extraSeconds + a.extraSeconds) * 1000;
   let base: number | null = null;
   const start = a.startedAt.getTime();
@@ -84,7 +87,7 @@ export function remainingMs(c: TimingContest, a: TimingAttempt, now = Date.now()
 
 export function isExpired(c: TimingContest, a: TimingAttempt, now = Date.now()): boolean {
   if (a.status !== "active") return a.status === "expired";
-  if (isPaused(c)) return false;
+  if (isPaused(c) && !a.isPreview) return false;
   const d = attemptDeadline(c, a, now);
   return d !== null && now > d + GRACE_MS;
 }

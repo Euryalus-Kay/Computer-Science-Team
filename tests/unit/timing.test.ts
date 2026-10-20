@@ -66,4 +66,14 @@ describe("test timing", () => {
     expect(isExpired(live(), attempt(0), T0 + 30 * min + 10_000)).toBe(false);
     expect(isExpired(live(), attempt(0), T0 + 30 * min + 20_000)).toBe(true);
   });
+
+  it("an admin's preview runs on its own clock, even after the test ended", () => {
+    const ended = live({ closesAt: new Date(T0 + 12 * min) });
+    const preview = { ...attempt(60 * min), isPreview: true };
+    expect(attemptDeadline(ended, preview)).toBe(T0 + 90 * min);
+    expect(isExpired(ended, preview, T0 + 61 * min)).toBe(false);
+    expect(isExpired(ended, preview, T0 + 91 * min)).toBe(true);
+    const paused = live({ pauses: [{ start: new Date(T0 + 50 * min).toISOString(), end: null }] });
+    expect(isExpired(paused, preview, T0 + 91 * min)).toBe(true);
+  });
 });

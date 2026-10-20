@@ -96,7 +96,7 @@ export default async function TakePage(props: PageProps<"/take/[attemptId]">) {
       answers={Object.fromEntries(answers.map((a) => [a.itemId, { response: a.response, state: a.state, status: a.status }]))}
       resources={resources}
       remainingMs={remainingMs(contest, attempt)}
-      paused={isPaused(contest)}
+      paused={!attempt.isPreview && isPaused(contest)}
       desktop={session.kind === "desktop"}
     />
   );
