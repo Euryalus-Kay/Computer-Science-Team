@@ -138,14 +138,55 @@ export function buildTerminalEnv(rng: Rng): { env: TerminalEnv; key: TerminalKey
 
 type Ask = "most-failed" | "door-code" | "archive";
 type TerminalPub = { env: TerminalEnv; ask: Ask };
+type TerminalState = { hint?: string };
 
-export const terminal: WidgetModule<{ ask: Ask }, TerminalPub, { answer: string }, { text: string }> = {
+/**
+ * The one hint for a relay-7 question. It points at the next step the commands so far haven't
+ * reached, so it helps whether someone is just starting or nearly there.
+ */
+export function terminalHint(ask: Ask, history: string[], cwd: string, home: string): string {
+  const h = history.map((x) => x.toLowerCase());
+  const ran = (re: RegExp) => h.some((x) => re.test(x));
+  const sawAuth = ran(/auth\.log/);
+  const sawFail = ran(/grep.*fail/);
+  const sawTodo = ran(/todo/);
+  const sawUsers = ran(/etc\/users|\busers\b/);
+  const sawHidden = ran(/^ls\b.*\s-\w*a/);
+  const sawHint = ran(/\.hint/);
+  const inNotes = cwd === `${home}/notes`;
+  if (ask === "most-failed") {
+    if (!sawAuth) return "Every sign-in attempt is written to a log in `/var/log`. Run `ls /var/log`, then open the sign-in log with `cat /var/log/auth.log`.";
+    if (!sawFail) return "In `/var/log/auth.log`, each failed sign-in is a line marked FAIL. Run `grep FAIL /var/log/auth.log` to see only those.";
+    return "The answer is the user= name on the most FAIL lines. Go through `grep FAIL /var/log/auth.log` and keep a tally for each name.";
+  }
+  if (ask === "door-code") {
+    if (!sawTodo) return inNotes ? "The notes here say how the code is made. Run `ls`, then `cat todo.txt`." : "The notes in your home folder say how the code is made. Run `cd ~/notes`, then `ls`, then `cat todo.txt`.";
+    if (!sawAuth) return "todo.txt says the code comes from the first person who signed in successfully after midnight on the 15th. Sign-ins are in `/var/log/auth.log`. Look for the first OK line dated 2026-03-15.";
+    if (!sawUsers) return "Find the first OK line on 2026-03-15 in `/var/log/auth.log` (FAIL lines don't count). Then look that name up with `cat /etc/users`. The code is the last 4 digits of their id.";
+    return "The code is the last 4 digits of the id in `/etc/users` for the first person with an OK line on 2026-03-15. A failed sign-in just after midnight is there to trick you.";
+  }
+  if (!sawHidden && !sawHint) return "Some files are hidden. `ls -a ~/notes` shows them, including one that explains archive.enc.";
+  if (!sawHint) return "There's a hidden file called `.hint` in your notes folder. Read it with `cat ~/notes/.hint`.";
+  if (!sawAuth || !sawUsers) return "You need the number of users who never signed in successfully. Everyone is listed in `/etc/users`, and `/var/log/auth.log` marks each successful sign-in OK.";
+  return "Count the users in `/etc/users` with no OK line in `/var/log/auth.log`. Shift every letter of archive.enc back that many places: with a shift of 2, D becomes B and A wraps around to Y.";
+}
+
+export const terminal: WidgetModule<{ ask: Ask }, TerminalPub, { answer: string }, { text: string }, TerminalState> = {
   generate(rng, c) {
     const { env, key } = buildTerminalEnv(rng);
     const answer = c.ask === "most-failed" ? key.mostFailed : c.ask === "door-code" ? key.doorCode : key.archive;
     return { pub: { env, ask: c.ask }, key: { answer } };
   },
   grade: (_p, key, r) => ({ fraction: r?.text && normalizeText(r.text).replace(/^u-/, "") === key.answer.toLowerCase() ? 1 : 0 }),
+  // The only server move is the one hint. The shell runs in the browser, so it sends what was typed.
+  interact(pub, _key, state, action) {
+    const a = (action ?? {}) as { hint?: boolean; history?: unknown; cwd?: unknown };
+    if (!a.hint || state?.hint) return { state: state ?? {}, reply: { hint: state?.hint ?? null }, counts: false };
+    const history = Array.isArray(a.history) ? a.history.filter((x): x is string => typeof x === "string").slice(-200).map((x) => x.slice(0, 200)) : [];
+    const cwd = typeof a.cwd === "string" ? a.cwd.slice(0, 200) : pub.env.home;
+    const hint = terminalHint(pub.ask, history, cwd, pub.env.home);
+    return { state: { ...(state ?? {}), hint }, reply: { hint }, counts: false };
+  },
   describeKey: (_p, k) => k.answer,
 };
 
@@ -178,18 +219,23 @@ export function lookupPath(env: TerminalEnv, abs: string): FsNode | null {
 
 const HELP = `commands:
   ls [-a] [dir]        list files (-a shows hidden ones)
-  cd <dir>             change directory (.. goes up, ~ is home)
+  cd <dir>             go into a folder
+  cd ..                go back up one folder
+  cd ~                 go back to your home folder
+  pwd                  show which folder you're in
   cat <file>           print a file
   grep [-c] [-i] <text> <file>
                        lines containing text (-c counts them)
   head [-n N] <file>   first lines      tail [-n N] <file>  last lines
   wc -l <file>         count lines
-  pwd  whoami  history  clear`;
+  whoami  history  clear
+  reset                start this terminal over`;
 
 /** Runs one command line. Returns the output text, or null for `clear`. */
 export function runCommand(sh: Shell, line: string): { out: string | null; cwd: string } {
   const env = sh.env;
-  const args = line.trim().split(/\s+/).filter(Boolean);
+  // "cd.." is a common slip for "cd ..".
+  const args = line.trim().replace(/^cd\.\.(?=\/|$)/, "cd ..").split(/\s+/).filter(Boolean);
   if (!args.length) return { out: "", cwd: sh.cwd };
   const [cmd, ...rest] = args;
   const flags = rest.filter((a) => a.startsWith("-"));
@@ -211,6 +257,8 @@ export function runCommand(sh: Shell, line: string): { out: string | null; cwd: 
   switch (cmd) {
     case "help":
       return { out: HELP, cwd: sh.cwd };
+    case "reset":
+      return { out: null, cwd: env.home };
     case "pwd":
       return { out: sh.cwd, cwd: sh.cwd };
     case "whoami":
@@ -295,7 +343,7 @@ export function runCommand(sh: Shell, line: string): { out: string | null; cwd: 
 export function complete(sh: Shell, line: string): string {
   const parts = line.split(" ");
   const last = parts[parts.length - 1];
-  const cmds = ["help", "ls", "cd", "cat", "grep", "head", "tail", "wc", "pwd", "whoami", "history", "clear"];
+  const cmds = ["help", "ls", "cd", "cat", "grep", "head", "tail", "wc", "pwd", "whoami", "history", "clear", "reset"];
   if (parts.length === 1) {
     const m = cmds.filter((c) => c.startsWith(last));
     return m.length === 1 ? m[0] + " " : line;

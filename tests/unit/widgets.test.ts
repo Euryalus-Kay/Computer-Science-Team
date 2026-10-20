@@ -3,7 +3,7 @@ import { makeRng } from "@/lib/items/rng";
 import { WIDGETS } from "@/lib/items/widgets";
 import { BUILD_LEVELS, simulate, blockCount, railReplay, scaleReplay, press, type Block } from "@/lib/items/widgets/machines";
 import { consistentLiars } from "@/lib/items/widgets/logic";
-import { buildTerminalEnv, runCommand, complete, type Shell } from "@/lib/items/widgets/terminal";
+import { buildTerminalEnv, runCommand, complete, terminal, terminalHint, type Shell } from "@/lib/items/widgets/terminal";
 import { evalCircuit } from "@/lib/items/widgets/visual";
 import { runTock } from "@/lib/tock";
 
@@ -163,7 +163,46 @@ describe("lights", () => {
   });
 });
 
+describe("terminal hints", () => {
+  const home = "/home/guest";
+  it("each hint points at the next step not taken yet", () => {
+    expect(terminalHint("most-failed", [], home, home)).toMatch(/ls \/var\/log/);
+    expect(terminalHint("most-failed", ["cat /var/log/auth.log"], home, home)).toMatch(/grep FAIL/);
+    expect(terminalHint("most-failed", ["cat /var/log/auth.log", "grep FAIL /var/log/auth.log"], home, home)).toMatch(/tally/);
+    expect(terminalHint("door-code", [], home, home)).toMatch(/cd ~\/notes/);
+    expect(terminalHint("door-code", ["cd notes"], `${home}/notes`, home)).toMatch(/Run `ls`, then `cat todo.txt`/);
+    expect(terminalHint("door-code", ["cat notes/todo.txt"], home, home)).toMatch(/first OK line dated 2026-03-15/);
+    expect(terminalHint("door-code", ["cat notes/todo.txt", "cat /var/log/auth.log"], home, home)).toMatch(/cat \/etc\/users/);
+    expect(terminalHint("archive", [], home, home)).toMatch(/ls -a/);
+    expect(terminalHint("archive", ["ls -a notes"], home, home)).toMatch(/\.hint/);
+    expect(terminalHint("archive", ["ls -a notes", "cat notes/.hint"], home, home)).toMatch(/never signed in/);
+    expect(terminalHint("archive", ["cat notes/.hint", "cat /etc/users", "cat /var/log/auth.log"], home, home)).toMatch(/Shift every letter/);
+  });
+
+  it("there is only one hint, and asking for it isn't an answer", () => {
+    const { env } = buildTerminalEnv(makeRng(5));
+    const pub = { env, ask: "door-code" as const };
+    const first = terminal.interact!(pub, { answer: "0000" }, null, { hint: true, history: [], cwd: env.home });
+    expect(first.counts).toBe(false);
+    expect((first.reply as { hint: string }).hint).toMatch(/notes/);
+    const again = terminal.interact!(pub, { answer: "0000" }, first.state, { hint: true, history: ["cat ~/notes/todo.txt", "cat /var/log/auth.log"], cwd: env.home });
+    expect((again.reply as { hint: string }).hint).toBe((first.reply as { hint: string }).hint);
+    expect(terminal.grade(pub, { answer: "0000" }, null, first.state).fraction).toBe(0);
+  });
+});
+
 describe("terminal", () => {
+  it("cd .. goes up, cd.. works too, and reset goes home", () => {
+    const { env } = buildTerminalEnv(makeRng(3));
+    const sh: Shell = { env, cwd: env.home, history: [] };
+    const into = runCommand(sh, "cd notes");
+    expect(into.cwd).toBe(`${env.home}/notes`);
+    expect(runCommand({ ...sh, cwd: into.cwd }, "cd ..").cwd).toBe(env.home);
+    expect(runCommand({ ...sh, cwd: into.cwd }, "cd..").cwd).toBe(env.home);
+    expect(runCommand({ ...sh, cwd: "/var/log" }, "reset")).toEqual({ out: null, cwd: env.home });
+    expect(runCommand(sh, "help").out).toMatch(/cd \.\.\s+go back up one folder/);
+  });
+
   it("answers can be found with the shell", () => {
     for (let seed = 1; seed <= 25; seed++) {
       const { env, key } = buildTerminalEnv(makeRng(seed));

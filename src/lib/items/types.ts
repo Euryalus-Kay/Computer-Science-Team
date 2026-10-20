@@ -32,7 +32,7 @@ export type WidgetModule<C = any, P = any, K = any, R = any, S = any> = {
   generate(rng: Rng, config: C): Generated<P, K>;
   grade(pub: P, key: K, response: R | null, state: S | null): GradeResult;
   /** Server-side moves for widgets that keep secrets (e.g. the lock). */
-  interact?(pub: P, key: K, state: S | null, action: unknown): { state: S; reply: unknown };
+  interact?(pub: P, key: K, state: S | null, action: unknown): { state: S; reply: unknown; /** False for moves that aren't an answer, like asking for a hint. */ counts?: boolean };
   /** Human-readable correct answer for admin review. */
   describeKey?(pub: P, key: K): string;
 };

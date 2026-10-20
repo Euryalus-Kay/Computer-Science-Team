@@ -1318,6 +1318,50 @@ describe("Open the door", () => {
     }
   });
 
+  it("reset starts over without undoing an open door or a lockout", () => {
+    for (const s of SEEDS.slice(0, 50)) {
+      const { key } = gen<unknown, DoorKey>(row, s);
+      const { addr, code } = solve(key);
+      const moved = play(key, [`ip set ${addr}`, "cd /etc", "connect door"]);
+      const r = doorStep(key, moved.state, "reset", 1_000_000);
+      expect(r.reply.clear).toBe(true);
+      expect([r.state.ip, r.state.cwd, r.state.connected], `seed ${s}`).toEqual([key.start, key.env.home, false]);
+      const opened = play(key, [`ip set ${addr}`, "connect door", `unlock ${code}`]);
+      expect(doorStep(key, opened.state, "reset", 1_000_000).state.opened).toBe(true);
+      const wrong = String(Number(key.code) + 1);
+      const locked = play(key, [`ip set ${addr}`, "connect door", `unlock ${wrong}`, `unlock ${wrong}`, `unlock ${wrong}`]);
+      const after = doorStep(key, locked.state, "reset", 1_000_000).state;
+      expect(after.lockedUntil).toBe(locked.state.lockedUntil);
+      expect(play(key, ["help"]).outs[0]).toMatch(/cd \.\. goes back up/);
+    }
+  });
+
+  it("gives one hint that follows the student's progress, and keeps it", () => {
+    for (const s of SEEDS.slice(0, 50)) {
+      const { key } = gen<unknown, DoorKey>(row, s);
+      const { addr, code } = solve(key);
+      const hintFor = (cmds: string[]) => {
+        const st = cmds.length ? play(key, cmds).state : null;
+        const r = interactItem(row, s, st, { hint: true })!;
+        expect(r.counts).toBe(false);
+        return { hint: (r.reply as DoorState).hint!, state: r.state as DoorState };
+      };
+      expect(hintFor([]).hint).toMatch(/connect door/);
+      expect(hintFor(["connect door"]).hint).toMatch(/door\.conf/);
+      expect(hintFor(["connect door", "cat /etc/door.conf"]).hint).toMatch(new RegExp(`only allows addresses on ${key.net.replace(/\./g, "\\.")}\\.x`));
+      expect(hintFor(["connect door", "cat /etc/door.conf", `ip set ${addr}`]).hint).toMatch(/connect door` again/);
+      const near = hintFor(["cat /etc/door.conf", `ip set ${addr}`, "connect door"]);
+      expect(near.hint, `seed ${s}`).toMatch(/cam-/);
+      expect(near.hint).not.toContain(code);
+      // Asking again gives the same hint, and commands and reset keep it.
+      const again = interactItem(row, s, near.state, { hint: true })!;
+      expect((again.reply as DoorState).hint).toBe(near.hint);
+      const after = doorStep(key, near.state, "reset", 1_000_000).state;
+      expect(after.hint).toBe(near.hint);
+      expect(doorStep(key, after, "ls", 1_000_000).state.hint).toBe(near.hint);
+    }
+  });
+
   it("the interact path the site uses works the same way", () => {
     const s = SEEDS[3];
     const { key } = gen<unknown, DoorKey>(row, s);

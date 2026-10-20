@@ -30,6 +30,8 @@ export type DoorState = {
   history: string[];
   /** The transcript, so it survives a reload. */
   log: { p: string; i: string; o: string }[];
+  /** The one hint, once it has been asked for. */
+  hint?: string;
 };
 /** The reply carries the whole state too, so the runner can hand it back after a reload or a page change. */
 export type DoorReply = DoorState & { out: string; prompt: string; clear?: boolean };
@@ -119,8 +121,9 @@ export function buildDoor(rng: Rng): DoorKey {
 }
 
 const HELP = `commands:
-  ls [-a] [dir]  cd <dir>  cat <file>  grep <text> <file>
-  pwd  whoami  history  clear
+  ls [-a] [dir]  cat <file>  grep <text> <file>  pwd  whoami  history  clear
+  cd <dir>             go into a folder (cd .. goes back up, cd ~ goes home)
+  reset                start over from your first address and folder
   date                 this machine's clock
   ip                   show your address
   ip set <address>     change your address, e.g. ip set 10.0.1.50
@@ -151,6 +154,13 @@ export function doorStep(key: DoorKey, state: DoorState | null, line: string, no
 
   if (!cmd) out = "";
   else if (cmd === "help") out = HELP;
+  else if (cmd === "reset" && !rest.length) {
+    // Back to the start. An opened door stays open, and a lockout keeps running.
+    s.cwd = key.env.home;
+    s.ip = key.start;
+    s.connected = false;
+    clear = true;
+  }
   else if (cmd === "clear") clear = true;
   else if (cmd === "date") out = key.clock;
   else if (cmd === "exit") {
@@ -220,13 +230,46 @@ export function doorStep(key: DoorKey, state: DoorState | null, line: string, no
   return { state: s, reply: { ...s, out, prompt: promptOf(key, s), clear } };
 }
 
+/** The one hint, aimed at the next step this student hasn't managed yet. */
+export function doorHint(key: DoorKey, s: DoorState): string {
+  const h = s.history.map((x) => x.toLowerCase());
+  const ran = (re: RegExp) => h.some((x) => re.test(x));
+  if (s.opened) return "The door is already open, so there's nothing left to do here.";
+  const readConf = ran(/door\.conf/);
+  const net = `${key.net}.x`;
+  const back = s.connected ? " Type `exit` first to get back to lab-gate." : "";
+  if (!s.everConnected) {
+    if (!ran(/^connect\b/)) return "Start with `connect door` and read the reply carefully. It tells you what's wrong.";
+    if (!readConf) return "The door refused you because of your address. Its rules are in `/etc/door.conf`. Run `cat /etc/door.conf`.";
+    if (!s.ip.startsWith(key.net + ".")) return `door.conf only allows addresses on ${net}. Check yours with \`ip\`. Pick one on ${net} that \`/etc/hosts\` doesn't already list, and set it with \`ip set\`.`;
+    return "Your address is on the camera network now. Run `connect door` again.";
+  }
+  if (!readConf) return `The rule for the code is in \`/etc/door.conf\`.${back} Then run \`cat /etc/door.conf\`.`;
+  const conf = lookupConf(key);
+  if (/times the number of cameras/.test(conf))
+    return `The code is the hour from \`date\` (24-hour clock) times the number of cameras on ${net}. Count the cam- lines in \`/etc/hosts\` whose address starts with ${key.net}. A camera on another network doesn't count.${back}`;
+  return `Add up the last number of each cam- address on ${net} in \`/etc/hosts\`. A camera on another network doesn't count. Then \`connect door\` and \`unlock\` the total.${back}`;
+}
+
+function lookupConf(key: DoorKey): string {
+  const etc = key.env.fs.type === "dir" ? key.env.fs.children.etc : undefined;
+  const conf = etc?.type === "dir" ? etc.children["door.conf"] : undefined;
+  return conf?.type === "file" ? conf.content : "";
+}
+
 export const door: WidgetModule<object, DoorPub, DoorKey, unknown, DoorState> = {
   generate(rng) {
     const key = buildDoor(rng);
     return { pub: { host: key.env.host, user: key.env.user }, key };
   },
   interact(_pub, key, state, action) {
-    return doorStep(key, state, String((action as { cmd?: string })?.cmd ?? "").slice(0, 200));
+    const a = (action ?? {}) as { cmd?: string; hint?: boolean };
+    if (a.hint) {
+      const s = state ?? fresh(key);
+      const next = s.hint ? s : { ...s, hint: doorHint(key, s) };
+      return { state: next, reply: { ...next, out: "", prompt: promptOf(key, next) }, counts: false };
+    }
+    return doorStep(key, state, String(a.cmd ?? "").slice(0, 200));
   },
   // Opening the door is the goal; getting through to the controller is a third of it.
   grade: (_p, _k, _r, state) => ({ fraction: state?.opened ? 1 : state?.everConnected ? 0.3 : 0 }),

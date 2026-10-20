@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { useRouter } from "next/navigation";
 import {
   BookOpen,
@@ -219,6 +219,10 @@ export function Runner(props: RunnerProps) {
     setStatuses((s) => ({ ...s, [itemId]: "graded" }));
     return j.reply;
   };
+
+  // Questions get stable callbacks through this ref, so the clock ticking doesn't redraw them.
+  const handlers = useRef<Handlers>({ change, interact, log: integrity.push });
+  handlers.current = { change, interact, log: integrity.push };
 
   const beat = useCallback(async () => {
     if (finished.current) return;
@@ -476,16 +480,7 @@ export function Runner(props: RunnerProps) {
                 <QuestionHeader index={index} total={items.length} item={item} flagged={flags.has(item.id)} onFlag={() => toggleFlag(item.id)} />
                 {item.promptHtml && <div className="prose mb-6 max-w-none text-[15px]" dangerouslySetInnerHTML={{ __html: item.promptHtml }} />}
                 <div key={item.id} className="animate-in">
-                  <ItemView
-                    item={item}
-                    widget={item.widget}
-                    value={(responses[item.id] as never) ?? null}
-                    state={(states[item.id] as never) ?? null}
-                    onChange={(v) => change(item.id, v)}
-                    interact={(a) => interact(item.id, a)}
-                    disabled={paused || submitting}
-                    log={(type, data) => integrity.push(type, data)}
-                  />
+                  <QuestionView item={item} value={responses[item.id] ?? null} state={states[item.id] ?? null} disabled={paused || submitting} handlers={handlers} />
                 </div>
                 <div className="mt-10 flex items-center justify-between border-t border-line pt-5">
                   <Button variant="ghost" icon={<ChevronLeft className="size-4" />} onClick={() => go(index - 1)} disabled={index === 0}>
@@ -670,3 +665,29 @@ function QuestionHeader({
   );
 }
 
+type Handlers = {
+  change: (itemId: string, v: unknown) => void;
+  interact: (itemId: string, action: unknown) => Promise<unknown>;
+  log: (type: string, data?: Record<string, unknown>) => void;
+};
+
+/** One question. Memoized so it only redraws when its own answer or state changes. */
+const QuestionView = memo(function QuestionView({
+  item,
+  value,
+  state,
+  disabled,
+  handlers,
+}: {
+  item: RunnerItem;
+  value: unknown;
+  state: unknown;
+  disabled: boolean;
+  handlers: RefObject<Handlers>;
+}) {
+  const id = item.id;
+  const onChange = useCallback((v: unknown) => handlers.current.change(id, v), [id, handlers]);
+  const interact = useCallback((a: unknown) => handlers.current.interact(id, a), [id, handlers]);
+  const log = useCallback((type: string, data?: Record<string, unknown>) => handlers.current.log(type, data), [handlers]);
+  return <ItemView item={item} widget={item.widget} value={value as never} state={state as never} onChange={onChange} interact={interact} disabled={disabled} log={log} />;
+});

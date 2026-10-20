@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { RotateCcw } from "lucide-react";
 import { runCommand, complete, type Shell, type TerminalEnv } from "@/lib/items/widgets/terminal";
 import type { ItemProps } from "../types";
-import { AnswerField } from "./common";
+import { AnswerField, HintBox } from "./common";
 
 type Line = { kind: "in" | "out" | "sys"; text: string; prompt?: string };
 type Session = { shell: Shell; lines: Line[] };
@@ -18,16 +19,20 @@ function sessionFor(env: TerminalEnv): Session {
   const key = `${env.host}:${json.length}:${h}`;
   let s = sessions.get(key);
   if (!s) {
-    s = {
-      shell: { env, cwd: env.home, history: [] },
-      lines: [
-        { kind: "sys", text: `Connected to ${env.host} as ${env.user}.` },
-        { kind: "sys", text: "Type help to see the commands." },
-      ],
-    };
+    s = freshSession(env);
     sessions.set(key, s);
   }
   return s;
+}
+
+function freshSession(env: TerminalEnv): Session {
+  return {
+    shell: { env, cwd: env.home, history: [] },
+    lines: [
+      { kind: "sys", text: `Connected to ${env.host} as ${env.user}.` },
+      { kind: "sys", text: "Type help to see the commands." },
+    ],
+  };
 }
 
 function promptFor(sh: Shell) {
@@ -35,17 +40,33 @@ function promptFor(sh: Shell) {
   return `${sh.env.user}@${sh.env.host}:${dir}$`;
 }
 
-export function Terminal({ item, value, onChange, disabled }: ItemProps<{ env: TerminalEnv; ask: string }, { text: string }>) {
+export function Terminal({ item, value, onChange, disabled, state, interact, log }: ItemProps<{ env: TerminalEnv; ask: string }, { text: string }, { hint?: string }>) {
   const session = sessionFor(item.data.env);
-  const [, force] = useState(0);
+  const [hint, setHint] = useState<string | null>(state?.hint ?? null);
+  const getHint = async () => {
+    const r = (await interact({ hint: true, history: session.shell.history, cwd: session.shell.cwd })) as { hint: string | null };
+    if (!r?.hint) throw new Error("No hint");
+    setHint(r.hint);
+    log?.("hint_used");
+  };
+  // Bumped when the output changes. Scrolling follows it, so reading back up isn't pulled down again.
+  const [version, force] = useState(0);
   const [input, setInput] = useState("");
   const [hist, setHist] = useState<number | null>(null);
   const box = useRef<HTMLDivElement>(null);
   const field = useRef<HTMLInputElement>(null);
   useEffect(() => {
     box.current?.scrollTo({ top: box.current.scrollHeight });
-  });
+  }, [version]);
+  const reset = () => {
+    Object.assign(session, freshSession(item.data.env));
+    setInput("");
+    setHist(null);
+    force((n) => n + 1);
+    field.current?.focus();
+  };
   const exec = () => {
+    if (input.trim() === "reset") return reset();
     const sh = session.shell;
     const prompt = promptFor(sh);
     session.lines.push({ kind: "in", text: input, prompt });
@@ -103,6 +124,7 @@ export function Terminal({ item, value, onChange, disabled }: ItemProps<{ env: T
           <span className="size-2.5 rounded-full bg-[#3a4049]" />
           <span className="size-2.5 rounded-full bg-[#3a4049]" />
           <span className="ml-2 font-mono text-[11px] text-[#7c8692]">ssh {item.data.env.user}@{item.data.env.host}</span>
+          <ResetButton onClick={reset} disabled={disabled} />
         </div>
         <div
           ref={box}
@@ -137,7 +159,23 @@ export function Terminal({ item, value, onChange, disabled }: ItemProps<{ env: T
           </div>
         </div>
       </div>
+      <HintBox hint={hint} onGet={getHint} disabled={disabled} />
       <AnswerField label="Answer" value={value?.text ?? ""} onChange={(t) => onChange({ text: t })} disabled={disabled} width="w-56" />
     </div>
+  );
+}
+
+/** Starts the terminal over. Shared with the door terminal. */
+export function ResetButton({ onClick, disabled }: { onClick: () => void; disabled?: boolean }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      title="Clear the screen and go back to where you started"
+      className="ml-auto inline-flex h-6 items-center gap-1 rounded px-2 font-mono text-[11px] text-[#9aa4af] hover:bg-[#1c2128] hover:text-[#e9edf1] disabled:opacity-40"
+    >
+      <RotateCcw className="size-3" /> Reset
+    </button>
   );
 }

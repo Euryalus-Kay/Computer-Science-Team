@@ -25,6 +25,11 @@ export async function POST(req: Request, ctx: RouteContext<"/api/attempts/[id]/i
     .limit(1);
   const r = interactItem(item, c.attempt.seed, prev?.state ?? null, body?.action);
   if (!r) return json({ error: "Not interactive" }, 400);
+  if (r.counts === false) {
+    // Asking for a hint: keep it, but it isn't an answer.
+    await upsertAnswer(id, item, prev ? { state: r.state as object } : { state: r.state as object, status: "empty" });
+    return json({ reply: r.reply });
+  }
   const g = gradeItem(item, c.attempt.seed, prev?.response ?? null, r.state);
   const now = new Date();
   await upsertAnswer(id, item, {

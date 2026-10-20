@@ -39,6 +39,7 @@ export const EVENT_TYPES = new Set([
   "desktop_quit_attempt",
   "seb_detected",
   "tock_run",
+  "hint_used",
   "submit",
 ]);
 
@@ -92,6 +93,7 @@ export function severityOf(e: ClientEvent): Severity {
     case "shortcut":
     case "print":
     case "fullscreen_unsupported":
+    case "hint_used":
       return "low";
     case "idle":
       return n(d.ms) >= 180_000 ? "low" : "info";
@@ -139,6 +141,7 @@ export const EVENT_LABEL: Record<string, string> = {
   desktop_exit_wrong: "Entered a wrong exit code",
   seb_detected: "Safe Exam Browser verified",
   tock_run: "Ran Tock code",
+  hint_used: "Used the hint",
   submit: "Submitted",
   playground_run: "Ran code in the Playground during the test",
   problem_run: "Ran a practice problem during the test",

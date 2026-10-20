@@ -5,11 +5,13 @@ import { DoorClosed, DoorOpen, LoaderCircle } from "lucide-react";
 import type { DoorReply, DoorState } from "@/lib/items/widgets/door";
 import { cn } from "@/lib/cn";
 import type { ItemProps } from "../types";
+import { ResetButton } from "./terminal";
+import { HintBox } from "./common";
 
 type Line = { kind: "in" | "out" | "sys"; text: string; prompt?: string };
 
 /** A terminal whose commands run on the server, for the door break-in. */
-export function Door({ item, interact, state, disabled }: ItemProps<{ host: string; user: string }, unknown, DoorState>) {
+export function Door({ item, interact, state, disabled, log }: ItemProps<{ host: string; user: string }, unknown, DoorState>) {
   const { host, user } = item.data;
   const welcome: Line[] = [
     { kind: "sys", text: `Connected to ${host} as ${user}.` },
@@ -28,13 +30,20 @@ export function Door({ item, interact, state, disabled }: ItemProps<{ host: stri
   const [hist, setHist] = useState<number | null>(null);
   const box = useRef<HTMLDivElement>(null);
   const field = useRef<HTMLInputElement>(null);
+  const [hint, setHint] = useState<string | null>(state?.hint ?? null);
+  const getHint = async () => {
+    const r = (await interact({ hint: true })) as DoorReply;
+    if (!r?.hint) throw new Error("No hint");
+    setHint(r.hint);
+    log?.("hint_used");
+  };
 
   useEffect(() => {
     box.current?.scrollTo({ top: box.current.scrollHeight });
   }, [lines, busy]);
 
-  const run = async () => {
-    const cmd = input;
+  const run = async (typed?: string) => {
+    const cmd = typed ?? input;
     if (busy) return;
     setInput("");
     setHist(null);
@@ -43,7 +52,7 @@ export function Door({ item, interact, state, disabled }: ItemProps<{ host: stri
     setBusy(true);
     try {
       const r = (await interact({ cmd })) as DoorReply;
-      if (r.clear) setLines([]);
+      if (r.clear) setLines(cmd.trim() === "reset" ? welcome : []);
       else if (r.out) setLines((ls) => [...ls, { kind: "out", text: r.out }]);
       setPrompt(r.prompt);
       setOpened(r.opened);
@@ -92,6 +101,7 @@ export function Door({ item, interact, state, disabled }: ItemProps<{ host: stri
             ssh {user}@{host}
             {connected && " → door"}
           </span>
+          <ResetButton onClick={() => run("reset")} disabled={disabled || busy} />
         </div>
         <div
           ref={box}
@@ -131,6 +141,7 @@ export function Door({ item, interact, state, disabled }: ItemProps<{ host: stri
           </div>
         </div>
       </div>
+      <HintBox hint={hint} onGet={getHint} disabled={disabled || opened} />
       <div className={cn("inline-flex items-center gap-2 rounded-md px-2.5 py-1.5 text-sm font-medium", opened ? "bg-accent-soft text-accent" : "bg-panel-3 text-ink-3")}>
         {opened ? <DoorOpen className="size-4" /> : <DoorClosed className="size-4" />}
         {opened ? "The door is open" : "The door is locked"}
