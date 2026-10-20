@@ -33,6 +33,7 @@ export function useIntegrity(opts: IntegrityOptions) {
   const ref = useRef(opts);
   ref.current = opts;
 
+  const began = useRef(false);
   const push = (type: string, data?: Record<string, unknown>) => {
     queue.current.push({ type, at: Date.now(), itemId: ref.current.currentItem(), data });
     if (queue.current.length > 300) queue.current.splice(0, queue.current.length - 300);
@@ -42,14 +43,18 @@ export function useIntegrity(opts: IntegrityOptions) {
     if (!opts.active) return;
     const { attemptId } = opts;
     const loadedKey = `attempt:${attemptId}:loaded`;
-    try {
-      if (sessionStorage.getItem(loadedKey)) push("reload");
-      else {
-        sessionStorage.setItem(loadedKey, "1");
-        push("start", { w: innerWidth, h: innerHeight, sw: screen.width, sh: screen.height, dpr: devicePixelRatio });
+    // Effects can run twice on mount in development; only the first run counts.
+    if (!began.current) {
+      began.current = true;
+      try {
+        if (sessionStorage.getItem(loadedKey)) push("reload");
+        else {
+          sessionStorage.setItem(loadedKey, "1");
+          push("start", { w: innerWidth, h: innerHeight, sw: screen.width, sh: screen.height, dpr: devicePixelRatio });
+        }
+      } catch {
+        push("start");
       }
-    } catch {
-      push("start");
     }
 
     let hiddenAt: number | null = null;
@@ -59,6 +64,12 @@ export function useIntegrity(opts: IntegrityOptions) {
     const onVisibility = () => {
       if (document.hidden) {
         hiddenAt = Date.now();
+        // Switching tabs blurs the window first; count it once, as leaving the tab.
+        if (blurAt && hiddenAt - blurAt < 1000) {
+          const last = queue.current[queue.current.length - 1];
+          if (last?.type === "blur") queue.current.pop();
+          blurAt = null;
+        }
         push("visibility_hidden");
       } else if (hiddenAt) {
         const away = Date.now() - hiddenAt;

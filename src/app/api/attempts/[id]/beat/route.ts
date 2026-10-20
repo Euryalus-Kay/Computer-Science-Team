@@ -1,4 +1,4 @@
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { answers, attempts, integrityEvents } from "@/lib/db/schema";
 import { attemptCtx, closeIfExpired, json } from "@/lib/tests/guard";
@@ -49,6 +49,22 @@ export async function POST(req: Request, ctx: RouteContext<"/api/attempts/[id]/b
         data,
       };
     });
+  // A second "start" means the test was opened again in a new tab or browser.
+  if (events.some((e) => e.type === "start")) {
+    const [{ n: starts }] = await d
+      .select({ n: sql<number>`count(*)::int` })
+      .from(integrityEvents)
+      .where(and(eq(integrityEvents.attemptId, id), eq(integrityEvents.type, "start")));
+    let seen = starts > 0;
+    for (const e of events) {
+      if (e.type !== "start") continue;
+      if (seen) {
+        e.type = "resume";
+        e.severity = "low";
+      }
+      seen = true;
+    }
+  }
   if (events.length && c.attempt.status === "active") {
     const [{ n }] = await d.select({ n: sql<number>`count(*)::int` }).from(integrityEvents).where(eq(integrityEvents.attemptId, id));
     if (n < 6000) await d.insert(integrityEvents).values(events);

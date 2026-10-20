@@ -2,7 +2,8 @@ import { sessionFromRequest, type Session } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import { integrityEvents } from "@/lib/db/schema";
 import { desktopInfo, sebInfo, publicUrl } from "@/lib/lockdown";
-import { finalizeAttempt, loadAttempt, lockdownOk, type AttemptRow, type ContestRow } from "./attempts";
+import { loadAttempt, lockdownOk, type AttemptRow, type ContestRow } from "./attempts";
+import { closeAttempt } from "./close";
 import { isExpired } from "./timing";
 
 export type AttemptCtx = { session: Session; attempt: AttemptRow; contest: ContestRow };
@@ -45,7 +46,7 @@ export async function attemptCtx(req: Request, attemptId: string): Promise<Attem
 export async function closeIfExpired(ctx: AttemptCtx): Promise<boolean> {
   if (ctx.attempt.status !== "active") return true;
   if (isExpired(ctx.contest, ctx.attempt)) {
-    await finalizeAttempt(ctx.attempt.id, "expired");
+    await closeAttempt(ctx.attempt.id, "expired");
     return true;
   }
   return false;

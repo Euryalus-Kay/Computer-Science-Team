@@ -1,10 +1,7 @@
-import { after } from "next/server";
 import { db } from "@/lib/db";
 import { integrityEvents } from "@/lib/db/schema";
 import { attemptCtx, json } from "@/lib/tests/guard";
-import { finalizeAttempt } from "@/lib/tests/attempts";
-import { summarizeAttempt } from "@/lib/integrity/analyze";
-import { gradePendingWithAi } from "@/lib/ai/grade";
+import { closeAttempt } from "@/lib/tests/close";
 
 export const maxDuration = 120;
 
@@ -22,11 +19,7 @@ export async function POST(req: Request, ctx: RouteContext<"/api/attempts/[id]/s
       severity: "info",
       at: new Date(),
     });
-    const r = await finalizeAttempt(id, "submitted");
-    after(async () => {
-      await summarizeAttempt(id);
-      if (r?.pending.length) await gradePendingWithAi(id);
-    });
+    await closeAttempt(id, "submitted");
   }
   return json({ ok: true });
 }

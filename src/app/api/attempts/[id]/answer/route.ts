@@ -4,6 +4,7 @@ import { answers, attempts } from "@/lib/db/schema";
 import { attemptCtx, closeIfExpired, json } from "@/lib/tests/guard";
 import { getItems, recomputeScore, upsertAnswer } from "@/lib/tests/attempts";
 import { gradeItem, needsReview } from "@/lib/items/engine";
+import { hasContent } from "@/lib/items/answered";
 
 export async function POST(req: Request, ctx: RouteContext<"/api/attempts/[id]/answer">) {
   const { id } = await ctx.params;
@@ -25,13 +26,14 @@ export async function POST(req: Request, ctx: RouteContext<"/api/attempts/[id]/a
     .limit(1);
   const now = new Date();
   const g = gradeItem(item, c.attempt.seed, body.response, prev?.state ?? null);
-  const empty = body.response == null || (typeof body.response === "object" && Object.keys(body.response as object).length === 0);
+  const widget = item.type === "widget" ? String((item.config as { widget?: string }).widget) : undefined;
+  const empty = !hasContent(body.response, widget);
   await upsertAnswer(id, item, {
     response: body.response ?? null,
     status: empty ? "empty" : needsReview(item) ? "pending" : "graded",
-    score: g.fraction === null ? null : g.fraction * item.points,
-    correct: g.fraction === null ? null : g.fraction === 1,
-    gradedBy: g.fraction === null ? null : "auto",
+    score: empty || g.fraction === null ? null : g.fraction * item.points,
+    correct: empty || g.fraction === null ? null : g.fraction === 1,
+    gradedBy: empty || g.fraction === null ? null : "auto",
     firstSavedAt: prev?.firstSavedAt ?? now,
     lastSavedAt: now,
     saves: (prev?.saves ?? 0) + 1,
@@ -40,7 +42,7 @@ export async function POST(req: Request, ctx: RouteContext<"/api/attempts/[id]/a
   const index = c.attempt.order.indexOf(item.id);
   await d
     .update(attempts)
-    .set({ lastActiveAt: now, lastItemId: item.id, frontier: Math.max(c.attempt.frontier, index + 1) })
+    .set({ lastActiveAt: now, lastItemId: item.id, frontier: empty ? c.attempt.frontier : Math.max(c.attempt.frontier, index + 1) })
     .where(eq(attempts.id, id));
   await recomputeScore(id);
   return json({ ok: true, savedAt: now.toISOString() });

@@ -204,7 +204,7 @@ export async function finalizeAttempt(attemptId: string, status: "submitted" | "
   const loaded = await loadAttempt(attemptId);
   if (!loaded) return null;
   const { attempt } = loaded;
-  if (attempt.status !== "active") return { pending: [] as string[] };
+  if (attempt.status !== "active") return { pending: [] as string[], already: true };
   const items = await getItems(attempt.contestId);
   const existing = new Map((await getAnswers(attemptId)).map((a) => [a.itemId, a]));
   const codes = await codeFractions(attemptId, items);
@@ -223,7 +223,8 @@ export async function finalizeAttempt(attemptId: string, status: "submitted" | "
       });
       continue;
     }
-    if (!a) continue;
+    // Rows that only hold time on the question have nothing to grade.
+    if (!a || (a.status === "empty" && a.state == null)) continue;
     if (needsReview(it)) {
       if (a.status !== "graded") pending.push(it.id);
       continue;
@@ -241,7 +242,7 @@ export async function finalizeAttempt(attemptId: string, status: "submitted" | "
     .update(attempts)
     .set({ status, submittedAt: new Date(), maxScore: items.reduce((s, i) => s + i.points, 0), score })
     .where(and(eq(attempts.id, attemptId), eq(attempts.status, "active")));
-  return { pending };
+  return { pending, already: false };
 }
 
 export async function upsertAnswer(attemptId: string, item: ItemRow, patch: Partial<typeof answers.$inferInsert>) {

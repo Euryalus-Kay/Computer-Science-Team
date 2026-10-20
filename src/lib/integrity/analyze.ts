@@ -12,81 +12,89 @@ const WEIGHT = { low: 6, medium: 16, high: 34 };
 
 const secs = (ms: number) => (ms >= 60_000 ? `${Math.round(ms / 60000)} min` : `${Math.round(ms / 1000)} s`);
 
-/** Rebuilds the per-attempt integrity summary from its event log and answers. */
-export async function summarizeAttempt(attemptId: string, extra: Flag[] = []): Promise<IntegritySummary | null> {
-  const d = await db();
-  const [attempt] = await d.select().from(attempts).where(eq(attempts.id, attemptId)).limit(1);
-  if (!attempt) return null;
-  const events = await d.select().from(integrityEvents).where(eq(integrityEvents.attemptId, attemptId)).orderBy(asc(integrityEvents.at));
-  const ans = await d.select().from(answers).where(eq(answers.attemptId, attemptId));
-  const stats: IntegritySummary["stats"] = {
-    leaves: 0,
-    awayMs: 0,
-    longestAwayMs: 0,
-    blurs: 0,
-    pastes: 0,
-    pastedChars: 0,
-    fullscreenExits: 0,
-    devtools: 0,
-    camera: 0,
-    resizes: 0,
-    reloads: 0,
-  };
-  const flags: Flag[] = [];
-  const returns: number[] = [];
-  for (const e of events) {
-    const data = (e.data ?? {}) as Record<string, number>;
-    switch (e.type) {
-      case "visibility_hidden":
-      case "desktop_blur":
+export type Stats = IntegritySummary["stats"];
+
+export const emptyStats = (): Stats => ({
+  leaves: 0,
+  awayMs: 0,
+  longestAwayMs: 0,
+  blurs: 0,
+  pastes: 0,
+  pastedChars: 0,
+  fullscreenExits: 0,
+  devtools: 0,
+  camera: 0,
+  resizes: 0,
+  reloads: 0,
+});
+
+/** Folds one event into running stats. Shared by the live monitor and the summary. */
+export function addEvent(stats: Stats, type: string, severity: string, data: Record<string, unknown> | null) {
+  const v = (k: string) => Number((data ?? {})[k]) || 0;
+  switch (type) {
+    case "visibility_hidden":
+    case "desktop_blur":
+      stats.leaves++;
+      break;
+    case "visibility_visible":
+    case "desktop_focus": {
+      const away = v("awayMs");
+      stats.awayMs += away;
+      stats.longestAwayMs = Math.max(stats.longestAwayMs, away);
+      break;
+    }
+    case "blur":
+      stats.blurs++;
+      break;
+    case "focus": {
+      // Back from another app while the tab stayed visible.
+      const away = v("awayMs");
+      if (away >= 1500) {
         stats.leaves++;
-        break;
-      case "visibility_visible":
-      case "desktop_focus": {
-        const away = Number(data.awayMs) || 0;
         stats.awayMs += away;
         stats.longestAwayMs = Math.max(stats.longestAwayMs, away);
-        if (away >= 4000) returns.push(e.at.getTime());
-        break;
       }
-      case "blur":
-        stats.blurs++;
-        break;
-      case "paste":
-        stats.pastes++;
-        stats.pastedChars += Number(data.chars) || 0;
-        break;
-      case "fullscreen_exit":
-        stats.fullscreenExits++;
-        break;
-      case "devtools":
-        stats.devtools++;
-        break;
-      case "resize":
-        if (data.small) stats.resizes++;
-        break;
-      case "reload":
-        stats.reloads++;
-        break;
-      default:
-        if (e.type.startsWith("camera_") && e.severity !== "info") stats.camera++;
+      break;
     }
+    case "paste":
+      stats.pastes++;
+      stats.pastedChars += v("chars");
+      break;
+    case "fullscreen_exit":
+      stats.fullscreenExits++;
+      break;
+    case "devtools":
+      stats.devtools++;
+      break;
+    case "resize":
+      if ((data ?? {}).small) stats.resizes++;
+      break;
+    case "reload":
+      stats.reloads++;
+      break;
+    default:
+      if (type.startsWith("camera_") && severity !== "info") stats.camera++;
   }
+}
+
+const SERVER_FLAGS: [string, string, Flag["severity"]][] = [
+  ["session_mismatch", "Tried to use the lockdown session outside the lockdown app.", "high"],
+  ["multi_screen", "A second screen was connected.", "high"],
+  ["desktop_display_change", "A display was connected or removed during the test.", "high"],
+  ["desktop_clipboard", "Clipboard changed from another app during the test.", "high"],
+  ["desktop_apps", "Assistant, chat or remote-control apps were running.", "high"],
+  ["second_device", "Signed in on a second device during the test.", "medium"],
+];
+
+/** Flags that follow from the stats and the set of event types seen. */
+export function flagsFromStats(stats: Stats, typeCounts: Map<string, number>): Flag[] {
+  const flags: Flag[] = [];
   if (stats.leaves) {
     const sev = stats.awayMs > 120_000 || stats.leaves >= 6 ? "high" : stats.awayMs > 20_000 || stats.leaves >= 3 ? "medium" : "low";
     flags.push({
       code: "left",
       severity: sev,
       message: `Left the test ${stats.leaves} time${stats.leaves === 1 ? "" : "s"}, ${secs(stats.awayMs)} away in total (longest ${secs(stats.longestAwayMs)}).`,
-    });
-  }
-  // A correct answer saved right after coming back from another tab or app.
-  const quick = ans.filter((a) => a.correct && a.firstSavedAt && returns.some((t) => a.firstSavedAt!.getTime() - t >= 0 && a.firstSavedAt!.getTime() - t < 20_000));
-  if (quick.length) {
-    flags.push({
-      code: "return-answer",
-      severity: quick.length >= 2 ? "high" : "medium",
-      message: `Answered ${quick.length} question${quick.length === 1 ? "" : "s"} correctly within 20 s of returning from another window.`,
     });
   }
   if (stats.pastes) {
@@ -102,22 +110,49 @@ export async function summarizeAttempt(attemptId: string, extra: Flag[] = []): P
   if (stats.resizes) flags.push({ code: "resize", severity: "medium", message: "Shrank the window, possibly to fit something beside it." });
   if (stats.reloads >= 2) flags.push({ code: "reload", severity: "low", message: `Reloaded the test ${stats.reloads} times.` });
   for (const t of ["playground_run", "problem_run", "problem_submit"]) {
-    const n = events.filter((e) => e.type === t).length;
+    const n = typeCounts.get(t) ?? 0;
     if (n) flags.push({ code: t, severity: "high", message: `${n} ${t === "playground_run" ? "Playground run" : "practice problem action"}${n === 1 ? "" : "s"} on the site during the test.` });
   }
-  const pick = (type: string, msg: string, sev: Flag["severity"] = "high") => {
-    if (events.some((e) => e.type === type)) flags.push({ code: type, severity: sev, message: msg });
-  };
-  pick("session_mismatch", "Tried to use the lockdown session outside the lockdown app.");
-  pick("multi_screen", "A second screen was connected.");
-  pick("desktop_display_change", "A display was connected or removed during the test.");
-  pick("desktop_clipboard", "Clipboard changed from another app during the test.");
-  pick("desktop_apps", "Assistant, chat or remote-control apps were running.");
-  pick("second_device", "Signed in on a second device during the test.", "medium");
-  flags.push(...extra);
+  for (const [type, message, severity] of SERVER_FLAGS) {
+    if (typeCounts.get(type)) flags.push({ code: type, severity, message });
+  }
+  return flags;
+}
+
+export function riskOf(flags: Flag[]): { risk: number; level: IntegritySummary["level"] } {
   const risk = Math.min(100, flags.reduce((s, f) => s + WEIGHT[f.severity], 0));
-  const level: IntegritySummary["level"] = risk >= 60 ? "high" : risk >= 30 ? "medium" : risk >= 8 ? "low" : "clear";
-  const summary: IntegritySummary = { risk, level, flags, stats, computedAt: new Date().toISOString() };
+  const level: IntegritySummary["level"] = risk >= 60 ? "high" : risk >= 30 ? "medium" : flags.length ? "low" : "clear";
+  return { risk, level };
+}
+
+/** Rebuilds the per-attempt integrity summary from its event log and answers. */
+/** `cross` replaces the flags from comparing attempts; leave it out to keep the last ones. */
+export async function summarizeAttempt(attemptId: string, cross: Flag[] | null = null): Promise<IntegritySummary | null> {
+  const d = await db();
+  const [attempt] = await d.select().from(attempts).where(eq(attempts.id, attemptId)).limit(1);
+  if (!attempt) return null;
+  const events = await d.select().from(integrityEvents).where(eq(integrityEvents.attemptId, attemptId)).orderBy(asc(integrityEvents.at));
+  const ans = await d.select().from(answers).where(eq(answers.attemptId, attemptId));
+  const stats = emptyStats();
+  const typeCounts = new Map<string, number>();
+  const returns: number[] = [];
+  for (const e of events) {
+    addEvent(stats, e.type, e.severity, e.data ?? null);
+    typeCounts.set(e.type, (typeCounts.get(e.type) ?? 0) + 1);
+    if ((e.type === "visibility_visible" || e.type === "desktop_focus" || e.type === "focus") && (Number(e.data?.awayMs) || 0) >= 4000) returns.push(e.at.getTime());
+  }
+  const flags = flagsFromStats(stats, typeCounts);
+  // A correct answer saved right after coming back from another tab or app.
+  const quick = ans.filter((a) => a.correct && a.firstSavedAt && returns.some((t) => a.firstSavedAt!.getTime() - t >= 0 && a.firstSavedAt!.getTime() - t < 20_000));
+  if (quick.length) {
+    flags.splice(1, 0, {
+      code: "return-answer",
+      severity: quick.length >= 2 ? "high" : "medium",
+      message: `Answered ${quick.length} question${quick.length === 1 ? "" : "s"} correctly within 20 s of returning from another window.`,
+    });
+  }
+  flags.push(...(cross ?? (attempt.integrity?.flags ?? []).filter((f) => f.code === "copied-version" || f.code === "fast")));
+  const summary: IntegritySummary = { ...riskOf(flags), flags, stats, computedAt: new Date().toISOString() };
   await d.update(attempts).set({ integrity: summary }).where(eq(attempts.id, attemptId));
   return summary;
 }
@@ -159,7 +194,7 @@ export async function analyzeContest(contestId: string) {
     .innerJoin(users, eq(users.id, attempts.userId))
     .where(and(eq(attempts.contestId, contestId), eq(attempts.isPreview, false)));
   if (rows.length < 2) {
-    for (const r of rows) await summarizeAttempt(r.attempt.id);
+    for (const r of rows) await summarizeAttempt(r.attempt.id, []);
     return;
   }
   const ids = rows.map((r) => r.attempt.id);

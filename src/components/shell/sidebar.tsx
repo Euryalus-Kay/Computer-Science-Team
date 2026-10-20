@@ -35,6 +35,7 @@ import { LogoMark } from "./logo";
 import { Avatar } from "@/components/ui/avatar";
 import { Menu, MenuItem, MenuSeparator } from "@/components/ui/menu";
 import { applyTheme, type ThemePref } from "./theme";
+import { useNow } from "@/lib/use-now";
 
 type Item = { href: string; label: string; icon: ComponentType<{ className?: string }>; match?: string; external?: boolean };
 
@@ -91,11 +92,8 @@ function NavLink({ item, path, collapsed, onNavigate }: { item: Item; path: stri
 }
 
 function Countdown({ deadline }: { deadline: number }) {
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    const t = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(t);
-  }, []);
+  const now = useNow(1000);
+  if (now === null) return null;
   const s = Math.max(0, Math.floor((deadline - now) / 1000));
   const m = Math.floor(s / 60);
   return (

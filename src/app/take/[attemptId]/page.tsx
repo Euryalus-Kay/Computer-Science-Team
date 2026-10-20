@@ -3,7 +3,8 @@ import { notFound } from "next/navigation";
 import { headers } from "next/headers";
 import Link from "next/link";
 import { requireUser } from "@/lib/auth/session";
-import { finalizeAttempt, getAnswers, getItems, loadAttempt, lockdownOk } from "@/lib/tests/attempts";
+import { getAnswers, getItems, loadAttempt, lockdownOk } from "@/lib/tests/attempts";
+import { closeAttempt } from "@/lib/tests/close";
 import { isExpired, isPaused, remainingMs } from "@/lib/tests/timing";
 import { publicItem } from "@/lib/items/engine";
 import { renderMarkdown } from "@/lib/markdown";
@@ -24,7 +25,7 @@ export default async function TakePage(props: PageProps<"/take/[attemptId]">) {
   let loaded = await loadAttempt(attemptId);
   if (!loaded || loaded.attempt.userId !== session.user.id) notFound();
   if (loaded.attempt.status === "active" && isExpired(loaded.contest, loaded.attempt)) {
-    await finalizeAttempt(attemptId, "expired");
+    await closeAttempt(attemptId, "expired");
     loaded = (await loadAttempt(attemptId))!;
   }
   const { attempt, contest } = loaded;

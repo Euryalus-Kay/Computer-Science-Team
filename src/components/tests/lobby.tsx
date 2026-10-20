@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/toast";
 import { formatDateTime, pts, relativeTime } from "@/lib/format";
 import type { Availability } from "@/lib/tests/timing";
+import { useNow } from "@/lib/use-now";
 import { OpenInApp, OpenInSeb } from "./lockdown-launch";
 
 type LobbyTest = {
@@ -49,7 +50,7 @@ export function TestLobby({
   const toast = useToast();
   const [state, setState] = useState<Availability>(initialState);
   const [offset, setOffset] = useState(0);
-  const [now, setNow] = useState(() => Date.now());
+  const tick = useNow(250);
   const [code, setCode] = useState("");
   const [starting, setStarting] = useState(false);
   const autoStarted = useRef(false);
@@ -72,11 +73,6 @@ export function TestLobby({
     const t = setInterval(poll, 2000);
     return () => clearInterval(t);
   }, [waiting, state.state, test.id]);
-
-  useEffect(() => {
-    const t = setInterval(() => setNow(Date.now()), 250);
-    return () => clearInterval(t);
-  }, []);
 
   async function start(preview = false) {
     if (starting) return;
@@ -125,7 +121,7 @@ export function TestLobby({
     test.camera ? { icon: Camera, text: "Camera check, video stays on your computer" } : null,
   ].filter(Boolean) as { icon: typeof Clock; text: string }[];
 
-  const countdown = state.state === "countdown" ? Math.max(0, state.startsAt - (now + offset)) : 0;
+  const countdown = state.state === "countdown" && tick !== null ? Math.max(0, state.startsAt - (tick + offset)) : null;
 
   return (
     <div>
@@ -159,7 +155,7 @@ export function TestLobby({
             {state.state === "countdown" ? (
               <>
                 <div className="text-sm text-ink-3">Starting in</div>
-                <div className="num mt-1 font-mono text-6xl font-semibold tabular-nums">{Math.ceil(countdown / 1000)}</div>
+                <div className="num mt-1 font-mono text-6xl font-semibold tabular-nums">{countdown === null ? "" : Math.ceil(countdown / 1000)}</div>
               </>
             ) : (
               <>

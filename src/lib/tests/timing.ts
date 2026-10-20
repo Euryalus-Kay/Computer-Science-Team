@@ -70,6 +70,8 @@ export function attemptDeadline(c: TimingContest, a: TimingAttempt, now = Date.n
     if (next === deadline) break;
     deadline = next;
   }
+  // A close time is a hard stop, which is how "End now" works for live tests.
+  if (c.closesAt) deadline = Math.min(deadline, c.closesAt.getTime());
   return deadline;
 }
 

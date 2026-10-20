@@ -1,0 +1,22 @@
+/** Names for the interactive question types, safe to import in the browser. */
+export const WIDGET_LABELS: Record<string, string> = {
+  figures: "Dot figures",
+  gears: "Gear train",
+  circuit: "Logic circuit",
+  paths: "Grid paths",
+  liars: "Who is lying",
+  "logic-grid": "Logic grid",
+  stride: "Infer a function",
+  cipher: "Cipher",
+  "robot-trace": "Robot trace",
+  "robot-build": "Robot program",
+  rail: "Rail yard",
+  scale: "Balance scale",
+  lights: "Lights",
+  network: "Network route",
+  "tock-trace": "Tock: trace",
+  "tock-reverse": "Tock: find the input",
+  "tock-write": "Tock: write a program",
+  terminal: "Terminal",
+  lock: "Code lock",
+};

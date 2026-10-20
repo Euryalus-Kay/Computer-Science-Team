@@ -25,6 +25,7 @@ import { Workspace, type WorkspaceProblem } from "@/components/problems/workspac
 import type { PublicItem } from "@/lib/items/types";
 import type { IntegrityConfig } from "@/lib/db/schema";
 import { cn } from "@/lib/cn";
+import { hasContent } from "@/lib/items/answered";
 import { useIntegrity } from "./integrity";
 import { CameraMonitor } from "./camera";
 
@@ -45,16 +46,7 @@ export type RunnerProps = {
 function isAnswered(item: RunnerItem, response: unknown, state: unknown, status?: string): boolean {
   if (item.type === "code") return status === "graded";
   if (item.widget === "lock") return Boolean((state as { guesses?: unknown[] })?.guesses?.length);
-  if (response == null) return false;
-  const r = response as Record<string, unknown>;
-  return Object.entries(r).some(([k, v]) => {
-    if (k === "marks") return false;
-    if (v == null) return false;
-    if (typeof v === "string") return v.trim().length > 0;
-    if (Array.isArray(v)) return v.length > (item.widget === "network" ? 1 : 0) && (item.widget !== "logic-grid" || v.some((x) => x !== -1));
-    if (typeof v === "object") return Object.keys(v).length > 0;
-    return true;
-  });
+  return hasContent(response, item.widget);
 }
 
 function fmt(ms: number) {
