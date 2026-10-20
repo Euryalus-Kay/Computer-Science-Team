@@ -57,7 +57,7 @@ const ADMIN: Item[] = [
   { href: "/admin/slides", label: "Slides", icon: Presentation },
   { href: "/admin/posts", label: "Posts", icon: Megaphone },
   { href: "/admin/integrity", label: "Integrity", icon: ScanEye },
-  { href: "/board", label: "Board", icon: MonitorPlay, external: true },
+  { href: "/admin/board", label: "Board", icon: MonitorPlay },
   { href: "/admin/settings", label: "Settings", icon: Settings2 },
 ];
 

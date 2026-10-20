@@ -1,0 +1,43 @@
+// Screens of the projector board in each view, plus the remote.
+import { chromium } from "@playwright/test";
+import { OUT, BASE } from "./lib.mjs";
+const browser = await chromium.launch();
+const ctx = await browser.newContext({ viewport: { width: 1600, height: 900 }, deviceScaleFactor: 1.5 });
+const page = await ctx.newPage();
+page.on("pageerror", (e) => console.log("PAGEERROR", e.message));
+page.on("console", (m) => m.type() === "error" && !/hydrat|Failed to load resource/i.test(m.text()) && console.log("CONSOLE", m.text().slice(0, 300)));
+await page.goto(BASE + "/login");
+await page.fill("#username", "maya");
+await page.fill('input[name="password"]', "testpass123");
+await page.click('button[type="submit"]');
+await page.waitForURL((u) => !u.pathname.startsWith("/login"));
+const api = (body) => page.evaluate(async (b) => (await fetch("/api/board/state", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify(b) })).status, body);
+const tests = await page.evaluate(async () => (await (await fetch("/api/board/state")).json()));
+console.log("board view", tests.state.view);
+await page.goto(BASE + "/board");
+await page.waitForTimeout(1200);
+console.log(await api({ view: "join" }));
+await page.waitForTimeout(1800);
+await page.screenshot({ path: `${OUT}/board-join.png` });
+await api({ view: "timer", timer: { action: "set", durationMs: 5 * 60_000, label: "Warm-up problems" } });
+await api({ timer: { action: "start" } });
+await page.waitForTimeout(2200);
+await page.mouse.move(800, 500);
+await page.waitForTimeout(400);
+await page.screenshot({ path: `${OUT}/board-timer.png` });
+const intro = await page.evaluate(async () => {
+  const r = await fetch("/api/board/state");
+  return r.ok;
+});
+// pick the intro test
+const id = process.argv[2];
+await api({ view: "test", contestId: id, showLeaderboard: false });
+await page.waitForTimeout(2200);
+await page.screenshot({ path: `${OUT}/board-test.png` });
+await api({ view: "blank", message: "Phones away. The test starts in two minutes." });
+await page.waitForTimeout(1800);
+await page.screenshot({ path: `${OUT}/board-message.png` });
+await page.goto(BASE + "/admin/board");
+await page.waitForTimeout(1500);
+await page.screenshot({ path: `${OUT}/board-remote.png` });
+await browser.close();

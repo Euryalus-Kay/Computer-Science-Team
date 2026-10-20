@@ -1,0 +1,20 @@
+// Screens of the test editor: settings, a widget question, a written question, adding a question.
+import fs from "node:fs";
+import { open, login, shot, BASE, OUT } from "./lib.mjs";
+const { testUrl } = JSON.parse(fs.readFileSync(`${OUT}/../flow.json`, "utf8"));
+const { browser, page } = await open();
+await login(page);
+await page.goto(testUrl + "/edit");
+await shot(page, "edit-settings");
+await page.screenshot({ path: `${OUT}/edit-settings-full.png`, fullPage: true });
+await page.click('aside button:has-text("Light coin")');
+await shot(page, "edit-widget");
+await page.click('aside button:has-text("Explain a strategy")');
+await shot(page, "edit-text");
+await page.click('aside button:has-text("Add question")');
+await page.waitForTimeout(200);
+await shot(page, "edit-add-menu");
+await page.click('[role="menu"] button:has-text("Multiple choice")');
+await page.fill('input.field >> nth=0', "Binary to decimal");
+await shot(page, "edit-mcq");
+await browser.close();
