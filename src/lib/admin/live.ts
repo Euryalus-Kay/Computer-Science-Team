@@ -222,7 +222,8 @@ export async function liveSnapshot(c: ContestRow, opts: { previews?: boolean; fe
       .select({ e: integrityEvents, name: users.name })
       .from(integrityEvents)
       .innerJoin(users, eq(users.id, integrityEvents.userId))
-      .where(and(eq(integrityEvents.contestId, c.id), inArray(integrityEvents.severity, ["low", "medium", "high"])))
+      // Only the attempts on screen, so an admin's own preview stays out unless previews are shown.
+      .where(and(eq(integrityEvents.contestId, c.id), inArray(integrityEvents.attemptId, ids), inArray(integrityEvents.severity, ["low", "medium", "high"])))
       .orderBy(desc(integrityEvents.id))
       .limit(60);
     feed = ev.map(({ e, name }) => ({
