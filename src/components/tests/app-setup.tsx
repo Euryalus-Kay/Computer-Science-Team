@@ -66,8 +66,10 @@ export function AppSetup({ lastUsed }: { lastUsed: string | null }) {
               {mac ? (
                 <>
                   <li>Open the downloaded file and drag Lab CS into Applications.</li>
+                  <li>Open Lab CS. macOS says it can&apos;t check the app, so close that message.</li>
                   <li>
-                    The first time, right-click Lab CS in Applications and choose <b>Open</b>, then <b>Open</b> again.
+                    Open <b>System Settings</b>, then <b>Privacy &amp; Security</b>, scroll down and choose <b>Open Anyway</b> next to Lab CS. On macOS 14 or
+                    older, right-click Lab CS and choose <b>Open</b> instead.
                   </li>
                 </>
               ) : (
