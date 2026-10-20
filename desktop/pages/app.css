@@ -1,0 +1,146 @@
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: #0d0f12;
+  color: #e9ebee;
+  font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+}
+main {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 32px;
+}
+.logo {
+  width: 44px;
+  height: 44px;
+}
+h1 {
+  margin: 14px 0 6px;
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+h2 {
+  margin: 0 0 4px;
+  font-size: 16px;
+  font-weight: 600;
+}
+p {
+  margin: 0;
+  color: #aeb4bc;
+  max-width: 420px;
+}
+b {
+  color: #e9ebee;
+  font-weight: 600;
+}
+.site {
+  margin-top: 26px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 8px 8px 14px;
+  border: 1px solid #262b32;
+  border-radius: 10px;
+  background: #14171b;
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 13px;
+}
+button {
+  height: 32px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 7px;
+  background: #e9ebee;
+  color: #0d0f12;
+  font: inherit;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+button:hover {
+  background: #ffffff;
+}
+button.ghost {
+  background: transparent;
+  color: #aeb4bc;
+}
+button.ghost:hover {
+  color: #e9ebee;
+}
+form {
+  margin-top: 24px;
+  width: 100%;
+  max-width: 380px;
+  text-align: left;
+}
+label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 13px;
+  color: #aeb4bc;
+}
+.row {
+  display: flex;
+  gap: 8px;
+}
+input {
+  flex: 1;
+  height: 34px;
+  padding: 0 10px;
+  border: 1px solid #353b44;
+  border-radius: 7px;
+  background: #14171b;
+  color: #e9ebee;
+  font: 14px ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  outline: none;
+  user-select: text;
+}
+input:focus {
+  border-color: #6c95f2;
+}
+input.bad {
+  border-color: #f07167;
+}
+.version {
+  position: fixed;
+  bottom: 14px;
+  font-size: 12px;
+  color: #5b626c;
+}
+body.exit {
+  -webkit-app-region: no-drag;
+}
+body.exit form {
+  margin: 0;
+  max-width: none;
+  padding: 22px;
+}
+body.exit p {
+  font-size: 13px;
+  margin-bottom: 14px;
+}
+body.exit input {
+  width: 100%;
+  margin-bottom: 14px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+body.exit .row {
+  justify-content: flex-end;
+}
+.err {
+  margin-top: 10px !important;
+  color: #f07167 !important;
+}

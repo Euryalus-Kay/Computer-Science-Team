@@ -12,6 +12,9 @@ export const ASSETS = {
   linux: "LabCS-linux.AppImage",
 } as const;
 
+/** DESKTOP_DOWNLOAD_BASE serves the installers from somewhere other than GitHub releases. */
 export function downloadUrl(asset: keyof typeof ASSETS) {
+  const base = process.env.DESKTOP_DOWNLOAD_BASE?.replace(/\/+$/, "");
+  if (base) return `${base}/${ASSETS[asset]}`;
   return `https://github.com/${releaseRepo()}/releases/latest/download/${ASSETS[asset]}`;
 }

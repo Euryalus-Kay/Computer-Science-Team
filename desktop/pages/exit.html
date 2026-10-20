@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'" />
+    <title>Exit code</title>
+    <link rel="stylesheet" href="app.css" />
+  </head>
+  <body class="exit">
+    <form id="f">
+      <h2>Leave the test?</h2>
+      <p>Ask your coach for the exit code. Leaving is recorded.</p>
+      <input id="code" autocomplete="off" spellcheck="false" autofocus />
+      <div class="row">
+        <button type="button" id="cancel" class="ghost">Back to the test</button>
+        <button type="submit">Exit</button>
+      </div>
+      <p id="err" class="err" hidden>That code isn't right.</p>
+    </form>
+    <script src="exit.js"></script>
+  </body>
+</html>

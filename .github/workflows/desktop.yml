@@ -1,0 +1,76 @@
+name: Desktop app
+
+# Builds the Lab CS app for Mac and Windows and publishes it as a GitHub release.
+# The website's download buttons and install commands point at the latest release.
+# Run it from the Actions tab, or push a tag like desktop-v1.0.1.
+on:
+  workflow_dispatch:
+  push:
+    tags: ["desktop-v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            target: --mac
+          - os: windows-latest
+            target: --win
+          - os: ubuntu-latest
+            target: --linux AppImage
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+        working-directory: desktop
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+      - run: npm ci
+      - name: Bake in the app secret
+        env:
+          SECRET: ${{ secrets.DESKTOP_APP_SECRET }}
+        run: |
+          if [ -n "$SECRET" ]; then node -e 'require("fs").writeFileSync("lib/secret.json", JSON.stringify({ secret: process.env.SECRET }))'; fi
+      - name: Build
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+        run: npx electron-builder ${{ matrix.target }} --publish never
+      - uses: actions/upload-artifact@v4
+        with:
+          name: app-${{ runner.os }}
+          path: |
+            desktop/dist/LabCS-*.dmg
+            desktop/dist/LabCS-*.zip
+            desktop/dist/LabCS-*.exe
+            desktop/dist/LabCS-*.AppImage
+          if-no-files-found: error
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - id: v
+        run: echo "version=$(node -p "require('./desktop/package.json').version")" >> "$GITHUB_OUTPUT"
+      - uses: actions/download-artifact@v4
+        with:
+          path: out
+          merge-multiple: true
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: desktop-v${{ steps.v.outputs.version }}
+          target_commitish: ${{ github.sha }}
+          name: Lab CS app ${{ steps.v.outputs.version }}
+          body: Lockdown app for Lab CS tests. Install it from the website's Desktop app page.
+          make_latest: true
+          files: out/*

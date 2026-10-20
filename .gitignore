@@ -15,3 +15,4 @@ desktop/node_modules/
 desktop/dist/
 desktop/out/
 shots/
+desktop/lib/secret.json

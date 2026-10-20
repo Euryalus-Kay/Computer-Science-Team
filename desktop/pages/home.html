@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'" />
+    <title>Lab CS</title>
+    <link rel="stylesheet" href="app.css" />
+  </head>
+  <body>
+    <main>
+      <svg class="logo" viewBox="0 0 24 24" aria-hidden="true">
+        <rect width="24" height="24" rx="6" fill="#eef0f3" />
+        <path d="M8.2 5.6h2.2c.9 0 1.5.4 1.9 1.3l5.3 11.5h-2.5l-2.6-5.9-3.4 5.9H6.6l4.6-7.6-.6-1.5c-.2-.5-.5-.7-1.1-.7H8.2V5.6Z" fill="#0d0f12" />
+      </svg>
+      <h1>Lab CS</h1>
+      <p id="lead">Open a test on the website and press <b>Open in Lab CS app</b>. It opens here.</p>
+      <div id="site" class="site" hidden>
+        <span id="server"></span>
+        <button id="open">Open website</button>
+      </div>
+      <form id="setup" hidden>
+        <label for="url">Your club's website</label>
+        <div class="row">
+          <input id="url" placeholder="https://labcs.example.org" autocomplete="off" spellcheck="false" />
+          <button type="submit">Save</button>
+        </div>
+      </form>
+      <p class="version" id="version"></p>
+    </main>
+    <script src="home.js"></script>
+  </body>
+</html>

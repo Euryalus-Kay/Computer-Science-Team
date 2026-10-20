@@ -7,7 +7,7 @@ export type QueuedEvent = { type: string; at: number; itemId?: string | null; da
 type DesktopBridge = {
   version: string;
   on: (cb: (e: { type: string; data?: Record<string, unknown> }) => void) => () => void;
-  testStarted: (info: { attemptId: string; title: string }) => void;
+  testStarted: (info: { attemptId: string; title: string; scanApps?: boolean }) => void;
   testEnded: () => void;
 };
 
@@ -22,6 +22,7 @@ export type IntegrityOptions = {
   title: string;
   active: boolean;
   blockPaste: boolean;
+  scanApps?: boolean;
   currentItem: () => string | null;
   onReturn?: (awayMs: number) => void;
   onFullscreenChange?: (on: boolean) => void;
@@ -188,7 +189,7 @@ export function useIntegrity(opts: IntegrityOptions) {
       push(e.type, e.data);
       if (e.type === "desktop_focus" && typeof e.data?.awayMs === "number") ref.current.onReturn?.(e.data.awayMs as number);
     });
-    desk?.testStarted({ attemptId, title: opts.title });
+    desk?.testStarted({ attemptId, title: opts.title, scanApps: opts.scanApps !== false });
 
     document.addEventListener("visibilitychange", onVisibility);
     window.addEventListener("blur", onBlur);

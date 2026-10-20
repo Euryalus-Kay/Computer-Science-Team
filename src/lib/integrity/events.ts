@@ -132,6 +132,8 @@ export const EVENT_LABEL: Record<string, string> = {
   desktop_clipboard: "Clipboard changed outside the app",
   desktop_apps: "Flagged apps running",
   desktop_quit_attempt: "Tried to quit the app",
+  desktop_exit: "Left the app with the exit code",
+  desktop_exit_wrong: "Entered a wrong exit code",
   seb_detected: "Safe Exam Browser verified",
   tock_run: "Ran Tock code",
   submit: "Submitted",

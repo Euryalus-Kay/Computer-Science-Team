@@ -99,6 +99,7 @@ export function Runner(props: RunnerProps) {
     title: contest.title,
     active: true,
     blockPaste: contest.integrity.blockPaste,
+    scanApps: contest.integrity.scanApps !== false,
     currentItem: () => currentId.current,
     onReturn: (away) => {
       if (contest.integrity.warnOnLeave && away >= 1500) {

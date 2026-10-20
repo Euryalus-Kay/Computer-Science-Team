@@ -15,7 +15,7 @@ export function detectPlatform(): Platform {
   return "other";
 }
 
-export function InstallCommand({ platform }: { platform: Platform }) {
+export function InstallCommand({ platform, first }: { platform: Platform; first?: boolean }) {
   const toast = useToast();
   const [origin, setOrigin] = useState("");
   const [copied, setCopied] = useState(false);
@@ -24,7 +24,11 @@ export function InstallCommand({ platform }: { platform: Platform }) {
   const cmd = platform === "mac" ? `curl -fsSL ${origin}/desktop/install.sh | bash` : `irm ${origin}/desktop/install.ps1 | iex`;
   return (
     <div>
-      <div className="mb-1 text-xs text-ink-3">{platform === "mac" ? "Or paste this in Terminal (installs with no security prompts):" : "Or paste this in PowerShell (no admin rights needed):"}</div>
+      <div className="mb-1 text-xs text-ink-3">
+        {platform === "mac"
+          ? `${first ? "Paste this in Terminal" : "Or paste this in Terminal"}. It installs with no security prompts.`
+          : `${first ? "Paste this in PowerShell" : "Or paste this in PowerShell"}. No admin rights needed.`}
+      </div>
       <div className="flex items-center gap-2 rounded-md border border-line bg-panel-2 py-1.5 pr-1.5 pl-3">
         <code className="min-w-0 flex-1 truncate font-mono text-[12.5px]">{cmd}</code>
         <button

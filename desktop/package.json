@@ -1,0 +1,50 @@
+{
+  "name": "labcs-desktop",
+  "productName": "Lab CS",
+  "version": "1.0.0",
+  "description": "Lockdown app for Lab CS tests",
+  "main": "main.js",
+  "private": true,
+  "author": "Lab CS",
+  "license": "MIT",
+  "repository": "github:Euryalus-Kay/Computer-Science-Team",
+  "scripts": {
+    "start": "electron .",
+    "test": "node test/handoff.mjs",
+    "dist:mac": "electron-builder --mac --publish never",
+    "dist:win": "electron-builder --win --publish never",
+    "dist:linux": "electron-builder --linux --publish never"
+  },
+  "devDependencies": {
+    "electron": "44.5.1",
+    "electron-builder": "26.15.3"
+  },
+  "build": {
+    "appId": "edu.labcs.desktop",
+    "productName": "Lab CS",
+    "directories": { "output": "dist" },
+    "files": ["main.js", "preload.js", "pages/**", "lib/**", "build/icon.png"],
+    "protocols": [{ "name": "Lab CS", "schemes": ["labcs"] }],
+    "mac": {
+      "target": [
+        { "target": "dmg", "arch": ["universal"] },
+        { "target": "zip", "arch": ["universal"] }
+      ],
+      "category": "public.app-category.education",
+      "identity": "-",
+      "hardenedRuntime": false,
+      "artifactName": "LabCS-mac.${ext}",
+      "extendInfo": { "NSCameraUsageDescription": "Lab CS checks the camera during tests that ask for it. Video stays on this computer." }
+    },
+    "dmg": { "artifactName": "LabCS-mac.dmg", "title": "Lab CS" },
+    "win": {
+      "target": [
+        { "target": "nsis", "arch": ["x64"] },
+        { "target": "zip", "arch": ["x64"] }
+      ],
+      "artifactName": "LabCS-windows.${ext}"
+    },
+    "nsis": { "oneClick": true, "perMachine": false, "artifactName": "LabCS-windows-setup.exe" },
+    "linux": { "target": ["AppImage", "dir"], "category": "Education", "artifactName": "LabCS-linux.${ext}" }
+  }
+}

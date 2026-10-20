@@ -20,7 +20,7 @@ Expand-Archive -Path $zip -DestinationPath $dest -Force
 Remove-Item $zip -Force
 $exe = Get-ChildItem -Path $dest -Filter 'Lab CS.exe' -Recurse | Select-Object -First 1 -ExpandProperty FullName
 if (-not $exe) { throw 'Lab CS.exe not found in the download.' }
-Get-ChildItem -Path $dest -Recurse | Unblock-File
+Get-ChildItem -Path $dest -Recurse -File | Unblock-File
 $key = 'HKCU:\\Software\\Classes\\labcs'
 New-Item -Path "$key\\shell\\open\\command" -Force | Out-Null
 Set-ItemProperty -Path $key -Name '(Default)' -Value 'URL:Lab CS'
