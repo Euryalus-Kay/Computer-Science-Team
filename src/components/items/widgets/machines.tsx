@@ -262,7 +262,7 @@ function EditableProgram({
                 e.stopPropagation();
                 onChange((root) => updateList(root, path, (l) => l.filter((_, j) => j !== i)));
               }}
-              className="rounded p-0.5 text-ink-4 opacity-0 group-hover:opacity-100 hover:text-red"
+              className="rounded p-0.5 text-ink-4 group-focus-within:opacity-100 group-hover:opacity-100 hover:text-red [@media(hover:hover)]:opacity-0"
               aria-label="Remove"
             >
               <Trash2 className="size-3" />

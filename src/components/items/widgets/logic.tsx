@@ -33,7 +33,7 @@ export function Liars({ item, value, onChange, disabled }: ItemProps<{ names: st
                   </span>
                   <span className="font-mono text-[14px] font-semibold">{n}</span>
                 </span>
-                <span className={cn("text-xs font-medium", on ? "text-red" : "text-ink-4 opacity-0 group-hover:opacity-100")}>
+                <span className={cn("text-xs font-medium", on ? "text-red" : "text-ink-4 group-hover:opacity-100 group-focus-visible:opacity-100 [@media(hover:hover)]:opacity-0")}>
                   {on ? "Compromised" : "Mark compromised"}
                 </span>
               </div>
