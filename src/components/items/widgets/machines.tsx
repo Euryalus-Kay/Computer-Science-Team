@@ -465,82 +465,161 @@ export function Rail({ item, value, onChange, disabled }: ItemProps<{ cars: numb
 
 type Spot = "tray" | "left" | "right";
 
+// The balance: the beam pivots at (PX, PY) and each pan hangs DROP below a beam end.
+const PX = 220;
+const PY = 52;
+const ARM = 150;
+const DROP = 62;
+const TILT = 12;
+const SWING = "transform 900ms cubic-bezier(.34,1.5,.64,1)";
+
+/** Where coin i of n sits on a pan centred at x, with the pan's rim at y. Coins pile in rows of four. */
+function coinSpot(i: number, n: number, x: number, y: number) {
+  const row = Math.floor(i / 4);
+  const inRow = Math.min(4, n - row * 4);
+  const col = i % 4;
+  return { cx: x + (col - (inRow - 1) / 2) * 23, cy: y - 11 - row * 19 };
+}
+
 export function Scale({ item, value, onChange, disabled }: ItemProps<{ coins: number; weighings: number }, { weighings: Weighing[]; pick: number | null }>) {
   const { coins, weighings: max } = item.data;
   const done = value?.weighings ?? [];
   const pick = value?.pick ?? null;
   const [spots, setSpots] = useState<Record<number, Spot>>({});
+  // After a weighing its coins stay on the pans, tipped, until the next weighing is set up.
+  const [showResult, setShowResult] = useState(true);
   const [err, setErr] = useState<string | null>(null);
   const replay = useMemo(() => scaleReplay(coins, done, max), [coins, done, max]);
-  const lastTilt = replay.tilts[replay.tilts.length - 1] ?? null;
-  const left = Object.entries(spots).filter(([, s]) => s === "left").map(([c]) => Number(c));
-  const right = Object.entries(spots).filter(([, s]) => s === "right").map(([c]) => Number(c));
+  const left = Object.entries(spots)
+    .filter(([, s]) => s === "left")
+    .map(([c]) => Number(c))
+    .sort((a, b) => a - b);
+  const right = Object.entries(spots)
+    .filter(([, s]) => s === "right")
+    .map(([c]) => Number(c))
+    .sort((a, b) => a - b);
   const used = done.length >= max;
-  const cycle = (c: number) => {
-    if (disabled || used) return;
+  const last = done[done.length - 1];
+  const lastTilt = replay.tilts[done.length - 1] ?? null;
+  const resultView = Boolean(last) && (used || (showResult && !left.length && !right.length));
+  const shown = resultView ? last : { left, right };
+  // Positive tips the right pan down, so the left pan rises when the left side is lighter.
+  const deg = resultView ? (lastTilt === "left-up" ? TILT : lastTilt === "right-up" ? -TILT : 0) : 0;
+  const rad = (deg * Math.PI) / 180;
+  const dx = ARM * (1 - Math.cos(rad));
+  const dy = ARM * Math.sin(rad);
+  const tray = Array.from({ length: coins }, (_, i) => i + 1).filter((c) => !shown.left.includes(c) && !shown.right.includes(c));
+
+  const clickCoin = (c: number) => {
+    if (disabled) return;
+    if (used) return onChange({ weighings: done, pick: c });
     setErr(null);
+    if (resultView) {
+      setShowResult(false);
+      setSpots({ [c]: "left" });
+      return;
+    }
     setSpots((s) => ({ ...s, [c]: s[c] === "left" ? "right" : s[c] === "right" ? "tray" : "left" }));
   };
   const weighNow = () => {
-    const w = { left: left.sort((a, b) => a - b), right: right.sort((a, b) => a - b) };
+    const w = { left, right };
     const e = validWeighing(w, coins);
     if (e) return setErr(e);
     onChange({ weighings: [...done, w], pick });
     setSpots({});
+    setShowResult(true);
   };
-  const angle = lastTilt === "left-up" ? -9 : lastTilt === "right-up" ? 9 : 0;
-  const coin = (c: number, small?: boolean) => {
-    const picked = pick === c;
+
+  const pan = (side: "left" | "right") => {
+    const x = side === "left" ? PX - ARM : PX + ARM;
+    const rim = PY + DROP;
+    const list = side === "left" ? shown.left : shown.right;
+    const move = side === "left" ? `translate(${dx}px, ${-dy}px)` : `translate(${-dx}px, ${dy}px)`;
     return (
-      <button
-        key={c}
-        type="button"
-        onClick={() => (used ? !disabled && onChange({ weighings: done, pick: c }) : cycle(c))}
-        className={cn(
-          "flex items-center justify-center rounded-full border-2 font-mono font-bold transition-colors",
-          small ? "size-8 text-xs" : "size-10 text-sm",
-          picked ? "border-red bg-red-soft text-red" : "border-amber/70 bg-amber-soft text-amber hover:border-amber",
-        )}
-      >
-        {c}
-      </button>
+      <g style={{ transform: move, transition: SWING }}>
+        <line x1={x} y1={PY} x2={x - 46} y2={rim} stroke="var(--ink-3)" strokeWidth={1.2} />
+        <line x1={x} y1={PY} x2={x + 46} y2={rim} stroke="var(--ink-3)" strokeWidth={1.2} />
+        {list.map((c, i) => {
+          const { cx, cy } = coinSpot(i, list.length, x, rim);
+          const picked = pick === c;
+          return (
+            <g
+              key={c}
+              role="button"
+              tabIndex={disabled ? -1 : 0}
+              aria-label={`Coin ${c}, on the ${side} pan`}
+              onClick={() => clickCoin(c)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  clickCoin(c);
+                }
+              }}
+              className={cn("outline-none", !disabled && "cursor-pointer")}
+              style={{ animation: "coin-drop 260ms ease-out" }}
+            >
+              <circle cx={cx} cy={cy} r={11} fill={picked ? "var(--red-soft)" : "var(--amber-soft)"} stroke={picked ? "var(--red)" : "var(--amber)"} strokeWidth={2} />
+              <text x={cx} y={cy + 4} textAnchor="middle" fontSize={11} fontWeight={700} fontFamily="var(--font-mono)" fill={picked ? "var(--red)" : "var(--amber)"}>
+                {c}
+              </text>
+            </g>
+          );
+        })}
+        <path d={`M${x - 52},${rim} Q${x},${rim + 24} ${x + 52},${rim} Z`} fill="var(--panel-3)" stroke="var(--ink-3)" strokeWidth={1.2} />
+      </g>
     );
   };
-  const onPan = (side: Spot) => (side === "left" ? left : right);
+
   return (
     <Stage>
+      <style>{`@keyframes coin-drop { from { transform: translateY(-14px); opacity: 0 } to { transform: none; opacity: 1 } }`}</style>
       <div className="px-5 py-5">
-        <div className="mx-auto flex max-w-[520px] flex-col items-center">
-          <svg viewBox="0 0 400 150" className="w-full">
-            <g transform={`rotate(${angle} 200 40)`} style={{ transition: "transform 500ms cubic-bezier(.3,1.4,.6,1)" }}>
-              <line x1={50} y1={40} x2={350} y2={40} stroke="var(--ink-2)" strokeWidth={4} strokeLinecap="round" />
-              {[50, 350].map((x) => (
-                <g key={x}>
-                  <line x1={x} y1={40} x2={x - 34} y2={92} stroke="var(--ink-3)" strokeWidth={1.2} />
-                  <line x1={x} y1={40} x2={x + 34} y2={92} stroke="var(--ink-3)" strokeWidth={1.2} />
-                  <path d={`M${x - 44},92 Q${x},112 ${x + 44},92 Z`} fill="var(--panel-3)" stroke="var(--ink-3)" />
-                </g>
-              ))}
+        <div className="mx-auto max-w-[540px]">
+          <svg viewBox="0 0 440 236" className="w-full">
+            <path d={`M${PX - 6},${PY} L${PX - 14},214 L${PX + 14},214 L${PX + 6},${PY} Z`} fill="var(--panel-3)" stroke="var(--ink-3)" strokeWidth={1.2} />
+            <rect x={PX - 52} y={212} width={104} height={10} rx={5} fill="var(--panel-3)" stroke="var(--ink-3)" strokeWidth={1.2} />
+            {pan("left")}
+            {pan("right")}
+            <g style={{ transform: `rotate(${deg}deg)`, transformOrigin: `${PX}px ${PY}px`, transition: SWING }}>
+              <line x1={PX - ARM} y1={PY} x2={PX + ARM} y2={PY} stroke="var(--ink-2)" strokeWidth={6} strokeLinecap="round" />
+              <circle cx={PX - ARM} cy={PY} r={3.5} fill="var(--ink-2)" />
+              <circle cx={PX + ARM} cy={PY} r={3.5} fill="var(--ink-2)" />
+              <path d={`M${PX - 7},${PY - 6} L${PX},${PY - 22} L${PX + 7},${PY - 6} Z`} fill="var(--ink-2)" />
             </g>
-            <path d="M200,40 L186,140 L214,140 Z" fill="var(--panel-3)" stroke="var(--ink-3)" />
-            <circle cx={200} cy={40} r={5} fill="var(--ink-2)" />
+            <circle cx={PX} cy={PY} r={6} fill="var(--panel)" stroke="var(--ink-2)" strokeWidth={2.5} />
           </svg>
-          <div className="-mt-3 grid w-full grid-cols-2 gap-10 px-2">
-            {(["left", "right"] as const).map((side) => (
-              <div key={side} className="flex min-h-9 flex-wrap justify-center gap-1">
-                {onPan(side).map((c) => coin(c, true))}
-              </div>
-            ))}
+          <div className="flex h-7 items-center justify-center">
+            {resultView && lastTilt && (
+              <span key={done.length} className="rounded-full bg-panel-3 px-3 py-1 text-sm font-medium" style={{ animation: "coin-drop 300ms ease-out 650ms both" }}>
+                {lastTilt === "balance" ? "Balanced" : lastTilt === "left-up" ? "Left side is lighter" : "Right side is lighter"}
+              </span>
+            )}
           </div>
         </div>
-        <div className="mt-5 border-t border-line pt-4">
+        <div className="mt-4 border-t border-line pt-4">
           <div className="mb-2 text-xs font-medium text-ink-3">
-            {used ? "Click the coin you think is light." : "Coins: click once for the left pan, twice for the right, three times to take off. Each weighing is final."}
+            {used
+              ? "Click the coin you think is light."
+              : "Click a coin to put it on the left pan, again to move it to the right, and once more to take it off. Each weighing is final."}
           </div>
-          <div className="flex flex-wrap gap-2">
-            {Array.from({ length: coins }, (_, i) => i + 1)
-              .filter((c) => used || !spots[c] || spots[c] === "tray")
-              .map((c) => coin(c))}
+          <div className="flex min-h-10 flex-wrap gap-2">
+            {tray.map((c) => {
+              const picked = pick === c;
+              return (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => clickCoin(c)}
+                  aria-label={`Coin ${c}`}
+                  className={cn(
+                    "flex size-10 items-center justify-center rounded-full border-2 font-mono text-sm font-bold transition-colors",
+                    picked ? "border-red bg-red-soft text-red" : "border-amber/70 bg-amber-soft text-amber hover:border-amber",
+                  )}
+                >
+                  {c}
+                </button>
+              );
+            })}
           </div>
           <div className="mt-4 flex flex-wrap items-center gap-3">
             {!used && (
