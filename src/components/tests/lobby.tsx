@@ -71,7 +71,13 @@ export function TestLobby({
     };
     poll();
     const t = setInterval(poll, 2000);
-    return () => clearInterval(t);
+    // Check again right as the countdown ends, so everyone moves in at zero.
+    const atZero = state.state === "countdown" ? setTimeout(poll, Math.max(0, state.startsAt - (Date.now() + offset)) + 150) : undefined;
+    return () => {
+      clearInterval(t);
+      clearTimeout(atZero);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [waiting, state.state, test.id]);
 
   async function start(preview = false) {

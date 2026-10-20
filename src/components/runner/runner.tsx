@@ -74,6 +74,8 @@ export function Runner(props: RunnerProps) {
   const [deadline, setDeadline] = useState<number | null>(props.remainingMs === null ? null : Date.now() + props.remainingMs);
   const [now, setNow] = useState(() => Date.now());
   const [paused, setPaused] = useState(props.paused);
+  // Time left as the server reported it while paused, so the clock doesn't tick between check-ins.
+  const [frozen, setFrozen] = useState<number | null>(props.paused ? props.remainingMs : null);
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [refOpen, setRefOpen] = useState(false);
   const [railOpen, setRailOpen] = useState(true);
@@ -93,6 +95,8 @@ export function Runner(props: RunnerProps) {
   const viewStart = useRef<number>(Date.now());
   const currentId = useRef(item?.id ?? null);
   const finished = useRef(false);
+  // People moved in automatically at a live start haven't been in full screen yet.
+  const beenFullscreen = useRef(false);
 
   const integrity = useIntegrity({
     attemptId,
@@ -108,6 +112,7 @@ export function Runner(props: RunnerProps) {
       }
     },
     onFullscreenChange: (on) => {
+      if (on) beenFullscreen.current = true;
       if (contest.integrity.requireFullscreen && !props.desktop) setNeedFullscreen(!on);
     },
   });
@@ -234,6 +239,7 @@ export function Runner(props: RunnerProps) {
         return;
       }
       setPaused(Boolean(j.paused));
+      setFrozen(j.paused && typeof j.remainingMs === "number" ? j.remainingMs : null);
       if (typeof j.remainingMs === "number") setDeadline(Date.now() + j.remainingMs);
     } catch {
       setOffline(true);
@@ -245,9 +251,13 @@ export function Runner(props: RunnerProps) {
 
   useEffect(() => {
     beat();
-    const t = setInterval(beat, 10_000);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useEffect(() => {
+    // Every 10 s, and every 2 s while paused so everyone picks up the resume quickly.
+    const t = setInterval(beat, paused ? 2000 : 10_000);
     return () => clearInterval(t);
-  }, [beat]);
+  }, [beat, paused]);
 
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 500);
@@ -267,7 +277,8 @@ export function Runner(props: RunnerProps) {
   }, []);
 
   useEffect(() => {
-    if (contest.integrity.requireFullscreen && !props.desktop && !document.fullscreenElement) setNeedFullscreen(true);
+    if (document.fullscreenElement) beenFullscreen.current = true;
+    else if (contest.integrity.requireFullscreen && !props.desktop) setNeedFullscreen(true);
   }, [contest.integrity.requireFullscreen, props.desktop]);
 
   const submit = useCallback(
@@ -287,7 +298,7 @@ export function Runner(props: RunnerProps) {
     [attemptId, beat, flushSaves, router],
   );
 
-  const remaining = deadline === null ? null : Math.max(0, deadline - now);
+  const remaining = deadline === null ? null : paused && frozen !== null ? frozen : Math.max(0, deadline - now);
   useEffect(() => {
     if (remaining === 0 && !paused && !timeUp) {
       setTimeUp(true);
@@ -449,7 +460,7 @@ export function Runner(props: RunnerProps) {
                   height="h-full"
                   submitLabel="Submit"
                   onSubmitted={() => setStatuses((s) => ({ ...s, [item.id]: "graded" }))}
-                  statementHeader={<QuestionHeader index={index} total={items.length} item={item} flagged={flags.has(item.id)} onFlag={() => toggleFlag(item.id)} />}
+                  statementHeader={<QuestionHeader index={index} total={items.length} item={item} flagged={flags.has(item.id)} onFlag={() => toggleFlag(item.id)} onGo={go} />}
                   onPaste={(t) => integrity.push("paste", { chars: t.length, editor: true })}
                 />
               </div>
@@ -528,7 +539,7 @@ export function Runner(props: RunnerProps) {
             ) : (
               <>
                 <Maximize2 className="mx-auto mb-2 size-6 text-ink-3" />
-                <div className="text-lg font-semibold">Full screen required</div>
+                <div className="text-lg font-semibold">{beenFullscreen.current ? "Full screen required" : "This test runs in full screen"}</div>
                 <div className="mt-1 mb-4 text-sm text-ink-3">Leaving full screen is recorded.</div>
                 <Button
                   variant="primary"
@@ -539,7 +550,7 @@ export function Runner(props: RunnerProps) {
                     } catch {}
                   }}
                 >
-                  Return to full screen
+                  {beenFullscreen.current ? "Return to full screen" : "Go full screen"}
                 </Button>
               </>
             )}
@@ -594,7 +605,22 @@ export function Runner(props: RunnerProps) {
   }
 }
 
-function QuestionHeader({ index, total, item, flagged, onFlag }: { index: number; total: number; item: RunnerItem; flagged: boolean; onFlag: () => void }) {
+function QuestionHeader({
+  index,
+  total,
+  item,
+  flagged,
+  onFlag,
+  onGo,
+}: {
+  index: number;
+  total: number;
+  item: RunnerItem;
+  flagged: boolean;
+  onFlag: () => void;
+  /** Code questions have no footer, so they get Previous and Next up here. */
+  onGo?: (i: number) => void;
+}) {
   return (
     <div className="mb-4">
       <div className="mb-2 flex items-center justify-between gap-3">
@@ -613,12 +639,24 @@ function QuestionHeader({ index, total, item, flagged, onFlag }: { index: number
             </>
           )}
         </div>
-        <button
-          onClick={onFlag}
-          className={cn("inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs", flagged ? "bg-amber-soft text-amber" : "text-ink-3 hover:bg-panel-3")}
-        >
-          <Flag className={cn("size-3.5", flagged && "fill-amber")} /> {flagged ? "Flagged" : "Flag"}
-        </button>
+        <div className="flex items-center gap-0.5">
+          <button
+            onClick={onFlag}
+            className={cn("inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs", flagged ? "bg-amber-soft text-amber" : "text-ink-3 hover:bg-panel-3")}
+          >
+            <Flag className={cn("size-3.5", flagged && "fill-amber")} /> {flagged ? "Flagged" : "Flag"}
+          </button>
+          {onGo && (
+            <>
+              <button onClick={() => onGo(index - 1)} disabled={index === 0} className="rounded-md p-1 text-ink-3 hover:bg-panel-3 hover:text-ink disabled:opacity-30" aria-label="Previous question">
+                <ChevronLeft className="size-4" />
+              </button>
+              <button onClick={() => onGo(index + 1)} disabled={index === total - 1} className="rounded-md p-1 text-ink-3 hover:bg-panel-3 hover:text-ink disabled:opacity-30" aria-label="Next question">
+                <ChevronRight className="size-4" />
+              </button>
+            </>
+          )}
+        </div>
       </div>
       {item.title && <h2 className="text-xl font-semibold tracking-[-0.01em]">{item.title}</h2>}
     </div>
