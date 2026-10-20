@@ -1,4 +1,4 @@
-export const DESKTOP_VERSION = "1.0.0";
+export const DESKTOP_VERSION = "1.0.1";
 
 export function releaseRepo() {
   return process.env.DESKTOP_RELEASE_REPO || "Euryalus-Kay/Computer-Science-Team";

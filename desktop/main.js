@@ -215,7 +215,9 @@ function lock(info) {
   if (locked) return;
   locked = true;
   clipboard.clear();
-  win.setFullScreen(false);
+  // macOS kiosk mode takes the window full screen on its own. Leaving full screen first starts an
+  // animation that races with it and can leave the window small, so only reset on Windows and Linux.
+  if (process.platform !== "darwin") win.setFullScreen(false);
   win.setKiosk(true);
   win.setAlwaysOnTop(true, "screen-saver");
   win.setVisibleOnAllWorkspaces?.(true, { visibleOnFullScreen: true });

@@ -25,7 +25,8 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   aiModel: "claude-opus-5-5",
   aiEffort: "low",
   practiceLeaderboard: true,
-  desktopMinVersion: "1.0.0",
+  // 1.0.1 signs its requests with DESKTOP_APP_SECRET; older copies are asked to update.
+  desktopMinVersion: "1.0.1",
 };
 
 const KEY = "site";
