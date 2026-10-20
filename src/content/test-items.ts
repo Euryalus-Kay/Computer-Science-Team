@@ -56,6 +56,14 @@ export const INTRO_ITEMS: SeedItem[] = [
     config: W("stride"),
   },
   {
+    section: "Warm-up",
+    type: "widget",
+    title: "Failed logins",
+    prompt: "You have a shell on `relay-7`. Which user has the most failed logins?",
+    points: 1,
+    config: W("terminal", { ask: "most-failed", seedKey: "terminal" }),
+  },
+  {
     section: "Quick fire",
     type: "mcq",
     title: "Ten rounds",
@@ -157,29 +165,12 @@ export const INTRO_ITEMS: SeedItem[] = [
     config: W("glyph"),
   },
   {
-    section: "Terminal",
-    type: "widget",
-    title: "Failed logins",
-    prompt: "You have a shell on `relay-7`. Which user has the most failed logins?",
-    points: 1,
-    config: W("terminal", { ask: "most-failed", seedKey: "terminal" }),
-  },
-  {
-    section: "Terminal",
+    section: "Machines",
     type: "widget",
     title: "Door code",
-    prompt: "What is the door code? The notes in the guest home folder explain how it's made.",
+    prompt: "Back on `relay-7`: what is the door code? The notes in the guest home folder explain how it's made.",
     points: 2,
     config: W("terminal", { ask: "door-code", seedKey: "terminal" }),
-  },
-  {
-    section: "Terminal",
-    type: "widget",
-    title: "Open the door",
-    prompt:
-      "A different machine: you're `guest` on `lab-gate`. Open the lab door, which is run by a controller called `door`. Read each error carefully, because it tells you what to look at next.",
-    points: 3,
-    config: W("door"),
   },
   {
     section: "Machines",
@@ -233,6 +224,15 @@ export const INTRO_ITEMS: SeedItem[] = [
     config: W("logic-grid"),
   },
   {
+    section: "Puzzles",
+    type: "widget",
+    title: "Open the door",
+    prompt:
+      "A different machine: you're `guest` on `lab-gate`. Open the lab door, which is run by a controller called `door`. Read each error carefully, because it tells you what to look at next.",
+    points: 3,
+    config: W("door"),
+  },
+  {
     section: "Challenge",
     type: "widget",
     title: "Tock: find the input",
@@ -260,14 +260,6 @@ export const INTRO_ITEMS: SeedItem[] = [
   {
     section: "Challenge",
     type: "widget",
-    title: "Hidden word",
-    prompt: "Back on `relay-7`: what word is hidden in `archive.enc`?",
-    points: 3,
-    config: W("terminal", { ask: "archive", seedKey: "terminal" }),
-  },
-  {
-    section: "Challenge",
-    type: "widget",
     title: "Grid paths",
     prompt: "Moving only right or down, how many different paths go from S to E without entering a blocked cell?",
     points: 3,
@@ -281,6 +273,14 @@ export const INTRO_ITEMS: SeedItem[] = [
       "Pressing a light switches it and the lights directly above, below, left and right of it. Turn every light off. Full marks if you use {{limit}} presses or fewer.",
     points: 3,
     config: W("lights"),
+  },
+  {
+    section: "Challenge",
+    type: "widget",
+    title: "Hidden word",
+    prompt: "Back on `relay-7`: what word is hidden in `archive.enc`?",
+    points: 3,
+    config: W("terminal", { ask: "archive", seedKey: "terminal" }),
   },
   {
     section: "Challenge",
